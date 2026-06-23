@@ -12,7 +12,7 @@ Lê a spec de uma task, valida, propõe o ciclo de desenvolvimento e aguarda apr
 A spec é a fonte de verdade. Sem spec válida, não há plano.
 
 ```
-Ler spec → Validar → Buscar contexto → Propor ciclo → GATE: aprovação → Inicializar task
+Ler spec → Validar → Buscar contexto → Propor ciclo → GATE: aprovação → Salvar plan.md → Inicializar task
 ```
 
 ## Fase 0 — Resolver spec
@@ -93,6 +93,53 @@ Exibir proposta estruturada:
 
 **Aguardar aprovação.** Não avançar sem confirmação explícita.
 
+## Fase 3.1 — Salvar plan.md imediatamente após aprovação
+
+Assim que o usuário aprovar, escrever `.specify/tasks/<slug>/plan.md` **antes** de qualquer comando CLI. O arquivo é a fonte de verdade do plano — não o chat.
+
+```markdown
+# Plan: <slug>
+
+**Data**: <data atual>
+**Spec**: .specify/tasks/<slug>/spec.md
+**Status**: aprovado
+
+## Critérios de sucesso
+
+1. <critério extraído da spec>
+2. <critério>
+...
+
+## Ciclo
+
+- RED: escrever testes para cada critério + edge cases
+- GREEN: implementar código mínimo (max 3 iterações)
+- REFACTOR: lint + fmt + re-run tests
+- REVIEW: adversarial — críticos = 0
+- CLOSE: gate check + result.md + commit
+
+## Gates obrigatórios
+
+| Gate | Comando | Critério |
+|------|---------|----------|
+| tests | `specify gate run --task <slug> --phase tests` | pass |
+| lint | `specify gate run --task <slug> --phase lint` | pass |
+| adversarial | `specify gate record --phase review --type adversarial` | pass, críticos = 0 |
+
+## Contexto da memória
+
+<decisões e padrões relevantes encontrados, ou "nenhum encontrado">
+
+## Worktree
+
+<"sim — .claude/worktrees/<slug>/ (branch: specify/<slug>)" ou "não — sessão principal">
+```
+
+Confirmar escrita:
+```bash
+cat .specify/tasks/<slug>/plan.md
+```
+
 ## Fase 4 — Decidir worktree vs sessão principal
 
 Usar **worktree isolado** quando:
@@ -118,22 +165,21 @@ specify task create --slug <slug> --title "<título>" --spec <spec_path>
 ## Fase 5 — Inicializar task
 
 ```bash
+# Criar task (com ou sem --worktree conforme decisão da Fase 4)
+specify task create --slug <slug> --title "<título>" --spec .specify/tasks/<slug>/spec.md
+# ou
+specify task create --slug <slug> --title "<título>" --spec .specify/tasks/<slug>/spec.md --worktree
+
 # Marcar como in_progress
 specify task update <slug> --status in_progress
 ```
 
-Salvar plan.md:
-```bash
-mkdir -p .specify/tasks/<slug>
-```
-
-Escrever `.specify/tasks/<slug>/plan.md` com o plano aprovado (fases, critérios, decisão de worktree, contexto de memória relevante, data).
-
 Confirmar:
 ```
-Task '<slug>' inicializada.
+✓ plan.md salvo em .specify/tasks/<slug>/plan.md
+Task '<slug>' criada e marcada como in_progress.
 Worktree: <path> (branch: specify/<slug>) — ou "sessão principal"
-Próximo passo: /specify sdd <slug>
+Próximo passo: /specify.sdd <slug>
 ```
 
 ## Quando NÃO usar
