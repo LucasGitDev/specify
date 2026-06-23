@@ -1,0 +1,8 @@
+{
+  "name": "specify",
+  "description": "SDD + TDD + Agentic SDLC framework. Manages specs, memory, and gates per project.",
+  "author": {
+    "name": "Lucas Tsouza"
+  },
+  "version": "0.1.0"
+}
