@@ -6,51 +6,24 @@ from src.core.lang_detector import detect
 from src.core.project import find_project_root, get_project_paths
 from src.db.schema import init_db
 
-_INDEX_MD_TEMPLATE = """\
-# Specify — Project Index
+_TEMPLATES_DIR = Path(__file__).resolve().parent.parent.parent / "templates"
 
-## Stack
-- Language: {language}
-- Test: `{test_cmd}`
-- Lint: `{lint_cmd}`
-- Format: `{fmt_cmd}`
 
-## Architecture
-
-<!-- Descreva aqui a arquitetura do projeto -->
-
-## Constraints
-
-<!-- Regras de desenvolvimento específicas deste projeto -->
-"""
-
-_INDEX_MD_UNKNOWN = """\
-# Specify — Project Index
-
-## Stack
-- Language: (unknown — preencha manualmente)
-
-## Architecture
-
-<!-- Descreva aqui a arquitetura do projeto -->
-
-## Constraints
-
-<!-- Regras de desenvolvimento específicas deste projeto -->
-"""
+def _read_template(name: str) -> str:
+    return (_TEMPLATES_DIR / name).read_text()
 
 
 def _write_index_md(path: Path, root: Path) -> None:
     lang = detect(root)
     if lang:
-        content = _INDEX_MD_TEMPLATE.format(
+        content = _read_template("index_md.template").format(
             language=lang.language,
             test_cmd=lang.test_cmd,
             lint_cmd=lang.lint_cmd,
             fmt_cmd=lang.fmt_cmd,
         )
     else:
-        content = _INDEX_MD_UNKNOWN
+        content = _read_template("index_md_unknown.template")
     path.write_text(content)
 
 

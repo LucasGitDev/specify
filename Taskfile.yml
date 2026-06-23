@@ -26,6 +26,26 @@ tasks:
     cmds:
       - .venv/bin/ruff format src/ tests/
 
+  test:e2e:
+    desc: "Smoke tests end-to-end"
+    cmds:
+      - .venv/bin/pytest tests/e2e/ -v
+
+  test:all:
+    desc: "Todos os testes (unit + e2e)"
+    cmds:
+      - .venv/bin/pytest tests/ -v
+
+  install:
+    desc: "Instala specify"
+    cmds:
+      - bash install.sh
+
+  uninstall:
+    desc: "Remove specify"
+    cmds:
+      - bash uninstall.sh
+
   dev:install:
     desc: "Instala em modo dev (symlink)"
     cmds:

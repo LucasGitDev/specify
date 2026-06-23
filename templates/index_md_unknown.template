@@ -1,0 +1,15 @@
+# Specify — Project Index
+
+## Stack
+- Language: (unknown — preencha manualmente)
+- Test: (ex: `go test ./...` ou `pytest`)
+- Lint: (ex: `go vet ./...` ou `ruff check .`)
+- Format: (ex: `gofmt -l .` ou `ruff format --check .`)
+
+## Architecture
+
+<!-- Descreva a estrutura de pastas e separação de camadas do projeto -->
+
+## Constraints
+
+<!-- Regras específicas deste projeto: padrões de teste, dependências proibidas, etc. -->

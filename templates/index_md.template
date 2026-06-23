@@ -1,0 +1,15 @@
+# Specify — Project Index
+
+## Stack
+- Language: {language}
+- Test: `{test_cmd}`
+- Lint: `{lint_cmd}`
+- Format: `{fmt_cmd}`
+
+## Architecture
+
+<!-- Descreva a estrutura de pastas e separação de camadas do projeto -->
+
+## Constraints
+
+<!-- Regras específicas deste projeto: padrões de teste, dependências proibidas, etc. -->
