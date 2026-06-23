@@ -1,0 +1,123 @@
+---
+name: specify-plan
+description: "Planeja o ciclo de desenvolvimento de uma task: lê spec, valida critérios, propõe fases RED→GREEN→REFACTOR→REVIEW→CLOSE, aguarda aprovação humana e inicializa a task no DB. Use quando o usuário quiser planejar uma implementação, usar '/specify plan', iniciar uma task com spec, ou dizer 'quero implementar <feature>'."
+user-invocable: true
+argument-hint: "Slug da task (ex: 'add-healthcheck'). A spec deve existir em .specify/tasks/<slug>/spec.md"
+---
+
+# specify plan
+
+Lê a spec de uma task, valida, propõe o ciclo de desenvolvimento e aguarda aprovação antes de iniciar qualquer código.
+
+A spec é a fonte de verdade. Sem spec válida, não há plano.
+
+```
+Ler spec → Validar → Buscar contexto → Propor ciclo → GATE: aprovação → Inicializar task
+```
+
+## Fase 0 — Resolver spec
+
+Se o usuário forneceu um slug como argumento:
+```bash
+cat .specify/tasks/<slug>/spec.md
+```
+
+Se não forneceu, listar specs disponíveis:
+```bash
+find .specify/tasks -name "spec.md" 2>/dev/null
+```
+
+Se nenhuma encontrada:
+> "Nenhuma spec encontrada. Crie `.specify/tasks/<slug>/spec.md` antes de continuar."
+
+## Fase 1 — Validar spec
+
+Uma spec válida requer:
+- Linha de título começando com `# `
+- Seção de critérios com heading contendo "critério", "aceite", "success" ou "sucesso"
+
+Se inválida, interromper com mensagem clara indicando o que falta.
+
+Extrair critérios da spec — serão usados para propor os testes na fase RED.
+
+## Fase 2 — Buscar contexto do projeto
+
+```bash
+# Decisões arquiteturais que podem impactar a implementação
+specify memory search "<palavras-chave da spec>"
+
+# Restrições globais
+specify memory list --type constraint
+
+# Tasks relacionadas (evitar conflito)
+specify task list --status in_progress
+```
+
+Usar o contexto para enriquecer a proposta (ex: "decidimos usar JWT, confirmar que a implementação segue esse padrão").
+
+## Fase 3 — Propor ciclo
+
+Exibir proposta estruturada:
+
+```
+═══════════════════════════════════════════════════
+  Plano — <slug>
+═══════════════════════════════════════════════════
+
+  Spec:     .specify/tasks/<slug>/spec.md
+  Título:   <título da spec>
+
+  Critérios de sucesso:
+  1. <critério>
+  2. <critério>
+  ...
+
+  Ciclo proposto:
+  → RED      escrever testes para cada critério + edge cases
+  → GREEN    implementar código mínimo (max 3 iterações)
+  → REFACTOR lint + fmt + re-run tests
+  → REVIEW   adversarial: verificar critérios vs implementação
+  → CLOSE    gate check + result.md + commit
+
+  Gates obrigatórios:
+  - GREEN: specify gate run --phase tests (pass)
+  - REFACTOR: specify gate run --phase lint (pass)
+  - REVIEW: classify críticos = 0
+
+  Contexto relevante da memória:
+  <decisões/padrões encontrados, ou "nenhum encontrado">
+
+  Prosseguir com este plano? [s para continuar]
+═══════════════════════════════════════════════════
+```
+
+**Aguardar aprovação.** Não avançar sem confirmação explícita.
+
+## Fase 4 — Inicializar task
+
+```bash
+# Criar task se não existir
+specify task create --slug <slug> --title "<título>" --spec .specify/tasks/<slug>/spec.md \
+  2>/dev/null || echo "task já existe"
+
+# Marcar como in_progress
+specify task update <slug> --status in_progress
+```
+
+Salvar plan.md:
+```bash
+mkdir -p .specify/tasks/<slug>
+```
+
+Escrever `.specify/tasks/<slug>/plan.md` com o plano aprovado (fases, critérios, contexto de memória relevante, data).
+
+Confirmar:
+```
+Task '<slug>' inicializada.
+Próximo passo: /specify sdd <slug>
+```
+
+## Quando NÃO usar
+
+- Sem spec escrita — escreva `.specify/tasks/<slug>/spec.md` primeiro
+- Task já em `in_progress` com gates registrados — use `/specify sdd` diretamente
