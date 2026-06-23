@@ -74,10 +74,19 @@ Exibir proposta estruturada:
 
   Ciclo proposto:
   → RED      escrever testes para cada critério + edge cases
+               commit: test(<slug>): add failing tests for <critério principal>
   → GREEN    implementar código mínimo (max 3 iterações)
+               commit: feat(<scope>): <o que foi implementado> — por critério
   → REFACTOR lint + fmt + re-run tests
+               commit: style(<scope>): apply lint and formatter  (se houver diff)
   → REVIEW   adversarial: verificar critérios vs implementação
-  → CLOSE    gate check + result.md + commit
+               commit: fix(<scope>): <correção de crítico>  (se houver correção)
+  → CLOSE    gate check + result.md
+
+  Estratégia de commits:
+  → automático  agent commita em cada fase sem perguntar
+  → controlado  agent propõe mensagem, você confirma antes de cada commit
+  → manual      agent não commita — você commita quando quiser
 
   Gates obrigatórios:
   - GREEN: specify gate run --phase tests (pass)
@@ -88,10 +97,11 @@ Exibir proposta estruturada:
   <decisões/padrões encontrados, ou "nenhum encontrado">
 
   Prosseguir com este plano? [s para continuar]
+  Estratégia de commits? [automático / controlado / manual]
 ═══════════════════════════════════════════════════
 ```
 
-**Aguardar aprovação.** Não avançar sem confirmação explícita.
+**Aguardar aprovação e estratégia de commits.** Não avançar sem confirmação explícita de ambos.
 
 ## Fase 3.1 — Salvar plan.md imediatamente após aprovação
 
@@ -116,7 +126,11 @@ Assim que o usuário aprovar, escrever `.specify/tasks/<slug>/plan.md` **antes**
 - GREEN: implementar código mínimo (max 3 iterações)
 - REFACTOR: lint + fmt + re-run tests
 - REVIEW: adversarial — críticos = 0
-- CLOSE: gate check + result.md + commit
+- CLOSE: gate check + result.md
+
+## Estratégia de commits
+
+<automático | controlado | manual>
 
 ## Gates obrigatórios
 

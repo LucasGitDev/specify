@@ -82,6 +82,13 @@ Para cada `crítico` e `importante` bloqueante:
 ```bash
 specify gate run --task <slug> --phase green --iteration review-<N>
 ```
+3. Commitar correção (seguindo estratégia do plan.md):
+```
+fix(<scope>): <o que foi corrigido>
+```
+- Um commit por crítico resolvido
+- `fix` sempre — correção identificada em review nunca é `feat`
+- Mensagem em inglês, imperativo, sem ponto final, uma linha
 
 Se críticos persistirem após 2 ciclos:
 ```
@@ -93,9 +100,33 @@ Findings não resolvidos:
 Aguardando orientação humana.
 ```
 
-## Fase 4 — Registrar gate
+## Fase 4 — Salvar review.md e registrar gate
 
-Se zero críticos:
+Salvar `.specify/tasks/<slug>/review.md`:
+
+```markdown
+# Review: <slug>
+
+**Data**: <data>
+**Iterações de correção**: <N>
+
+## Findings
+
+| Critério | Severidade | Status | Descrição |
+|----------|-----------|--------|-----------|
+| <critério 1> | ✓ | aprovado | — |
+| <critério 2> | crítico | resolvido | <descrição do problema e correção> |
+| <critério 3> | sugestão | pendente | <descrição — não bloqueante> |
+
+## Correções realizadas
+
+- `fix(<scope>): <mensagem>`  (<hash>)
+
+## Resultado
+
+<APROVADO — zero críticos | BLOQUEADO — N críticos persistem>
+```
+
 ```bash
 specify gate record --task <slug> --phase review --type adversarial --status pass \
   --output "0 críticos, <N> importantes resolvidos, <M> sugestões"
@@ -114,7 +145,7 @@ Review concluído — <slug>
   Importantes: <N> resolvidos
   Sugestões:  <M> (não bloqueantes)
 
-Próximo passo: /specify close <slug>
+Próximo passo: /specify.close <slug>
 ```
 
 ## Quando NÃO usar

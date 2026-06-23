@@ -12,7 +12,7 @@ Executa o loop **RED → GREEN → REFACTOR** de uma task, registrando cada gate
 A spec define o que implementar. Os gates definem quando cada fase está completa. Não pule fases.
 
 ```
-Ler spec → RED (testes) → gate red → GREEN (impl) → gate green → REFACTOR (lint/fmt) → gate refactor
+Ler spec → RED (testes) → commit → gate red → GREEN (impl) → commit por critério → gate green → REFACTOR → commit (se diff) → gate refactor → sdd.log
 ```
 
 ## Fase 0 — Setup
@@ -22,20 +22,24 @@ Ler spec → RED (testes) → gate red → GREEN (impl) → gate green → REFAC
 specify task status <slug>
 ```
 
-Se status for `planned`: orientar executar `/specify plan <slug>` primeiro.  
+Se status for `planned`: orientar executar `/specify.plan <slug>` primeiro.  
 Se status for `review` ou `closed`: avisar que task já passou dessa fase.
 
 ```bash
-# Ler spec e plan
+# Ler spec e plan (plan.md contém estratégia de commits)
 cat .specify/tasks/<slug>/spec.md
 cat .specify/tasks/<slug>/plan.md 2>/dev/null || echo "(sem plan.md)"
 ```
 
+Extrair **estratégia de commits** do `plan.md`. Se ausente, perguntar antes de continuar:
+> "Qual estratégia de commits: `automático` (agent commita direto), `controlado` (propõe + você confirma) ou `manual` (você commita)?"
+
 Exibir resumo:
 ```
 SDD — <slug>
-  Critérios: <N> encontrados
-  Linguagem: <detectada automaticamente pelo gate run>
+  Critérios:  <N> encontrados
+  Linguagem:  <detectada automaticamente pelo gate run>
+  Commits:    <automático | controlado | manual>
 Iniciando RED...
 ```
 
@@ -72,6 +76,15 @@ RED verificado:
   ✓ <M> testes preexistentes passando
 ```
 
+**Commit RED** (seguindo estratégia definida no plan.md):
+```
+test(<scope>): add failing tests for <critério principal>
+```
+- `<scope>`: nome do pacote, módulo ou arquivo sendo testado (ex: `auth`, `healthcheck`, `user`)
+- Mensagem em inglês, imperativo, sem ponto final, sem longer description
+- Uma linha. Sem `body`, sem `footer` (exceto `BREAKING CHANGE` se aplicável)
+- Incluir apenas arquivos de teste: `git add <arquivos _test.go ou test_*.py>`
+
 ## Fase GREEN — Implementar (loop, max 3 iterações)
 
 Implementar um critério por vez — código mínimo para fazer os testes passarem. Sem otimização, sem abstrações não pedidas pela spec.
@@ -87,9 +100,18 @@ GREEN verificado:
   ✓ <N> testes passando
   ✗ 0 falhando
 ```
+→ **Commit GREEN** por critério implementado (seguindo estratégia):
+```
+feat(<scope>): <o que foi implementado em termos de comportamento>
+```
+- Um commit por critério de sucesso implementado, não por arquivo modificado
+- `feat` para comportamento novo, `fix` para correção de comportamento existente
+- Incluir apenas arquivos de produção (não testes): `git add <arquivos src>`
+- Mensagem em inglês, imperativo, sem ponto final, uma linha
+
 → Avançar para REFACTOR.
 
-Se algum falhar e `iter < 3`: corrigir implementação e repetir.
+Se algum falhar e `iter < 3`: corrigir implementação e repetir. Não commitar iterações com falha.
 
 Se `iter == 3` e ainda falhando:
 ```
@@ -131,11 +153,23 @@ specify gate run --task <slug> --phase green --iteration final
 
 **Gate REFACTOR**: lint pass + fmt pass + testes ainda passando.
 
+**Commit REFACTOR** — apenas se houver diff após lint/fmt (seguindo estratégia):
+```bash
+git diff --stat
+```
+Se houver mudanças:
+```
+style(<scope>): apply lint and formatter
+```
+- Somente se formatter/linter alterou arquivos
+- Se não houve diff: não commitar (sem commit vazio)
+
 ```
 REFACTOR:
   ✓ lint: limpo
   ✓ fmt: aplicado
   ✓ testes pós-refactor: <N> passando
+  ✓ commit: <hash> (ou "sem diff — não necessário")
 ```
 
 ## Resultado final
@@ -143,6 +177,42 @@ REFACTOR:
 ```bash
 specify gate history --task <slug>
 specify task update <slug> --status review
+```
+
+Salvar `.specify/tasks/<slug>/sdd.log`:
+
+```markdown
+# SDD Log: <slug>
+
+**Data**: <data>
+**Estratégia de commits**: <automático | controlado | manual>
+
+## RED
+
+- Testes escritos: <N>
+- Gate: ✓ fail confirmado
+- Commit: `test(<scope>): add failing tests for <critério>`  (<hash>)
+
+## GREEN
+
+### Critério 1: <texto>
+- Iterações: <N>
+- Gate: ✓ pass
+- Commit: `feat(<scope>): <mensagem>`  (<hash>)
+
+### Critério 2: <texto>
+...
+
+## REFACTOR
+
+- lint: ✓ limpo
+- fmt: ✓ aplicado (ou "sem diff")
+- testes pós-refactor: ✓ <N> passando
+- Commit: `style(<scope>): apply lint and formatter`  (<hash> ou "não necessário")
+
+## Commits desta fase
+
+<lista de git log --oneline desde o início da task>
 ```
 
 ```
@@ -153,8 +223,9 @@ specify task update <slug> --status review
   RED      ✓  <N> testes escritos
   GREEN    ✓  <N> testes passando (iter <N>)
   REFACTOR ✓  lint limpo, fmt aplicado
+  Commits  ✓  <N> commits atômicos
 
-  Próximo passo: /specify review <slug>
+  Próximo passo: /specify.review <slug>
 ═══════════════════════════════════════════════════
 ```
 

@@ -10,7 +10,7 @@ argument-hint: "Slug da task (ex: 'add-healthcheck')"
 Gate final antes da entrega. Verifica que todos os gates obrigatórios passaram, gera o resultado e fecha a task.
 
 ```
-Verificar gates → Gerar result.md → Fechar task → Commit → MR
+Verificar gates → Verificar commits pendentes → Gerar result.md → Fechar task → Commit result.md → MR
 ```
 
 ## Fase 0 — Gate check
@@ -36,6 +36,26 @@ Não é possível fechar '<slug>'. Gates pendentes:
 
 Resolva os gates acima antes de fechar.
 ```
+
+## Fase 0.5 — Verificar commits pendentes
+
+```bash
+git status --short
+git diff --stat HEAD
+```
+
+Se houver arquivos modificados não commitados:
+```
+⚠ Há mudanças não commitadas. Isso não deveria acontecer se /specify.sdd foi executado.
+
+Arquivos pendentes:
+<lista>
+
+Commitando mudanças de código pendentes antes de fechar...
+```
+
+Se houver código pendente (não apenas `.specify/`): commitar com a estratégia definida no `plan.md`.
+Arquivos de `.specify/` (spec, plan, sdd.log) são commitados junto com o `result.md` no commit de encerramento.
 
 ## Fase 1 — Gerar result.md
 
@@ -75,20 +95,27 @@ Escrever `.specify/tasks/<slug>/result.md`:
 specify task close <slug>
 ```
 
-## Fase 3 — Commit e MR
+## Fase 3 — Commit de encerramento e MR
 
-Invocar `/commit` para gerar commit semântico.
+Commitar apenas os arquivos do `.specify/tasks/<slug>/` (result.md, sdd.log, review.md gerados neste fluxo):
 
-Se disponível, invocar `/pullrequest-creator` para gerar título e descrição do MR.
+```bash
+git add .specify/tasks/<slug>/
+git commit -m "chore(<slug>): close task and add specify artifacts"
+```
+
+- Mensagem fixa: `chore(<slug>): close task and add specify artifacts`
+- Não misturar com código de produção — se houver código pendente, ele já foi commitado na Fase 0.5
+
+Se disponível, invocar `/pullrequest-creator` para gerar título e descrição do MR com base nos commits da task:
+```bash
+git log --oneline origin/main..HEAD
+```
 
 Se em worktree isolado, orientar merge:
 ```bash
-# Verificar branch atual
-git branch --show-current
-
-# Merge na branch principal
 git checkout main
-git merge <branch-worktree> --no-ff -m "feat(<slug>): <título da task>"
+git merge <branch-worktree> --no-ff
 ```
 
 ## Resultado final
