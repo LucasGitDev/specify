@@ -1,5 +1,5 @@
 ---
-name: specify-review
+name: specify.review
 description: "Faz review adversarial de uma implementação contra a spec: classifica findings em crítico/importante/sugestão, tenta corrigir críticos automaticamente, registra gate de review. Use quando o usuário quiser revisar uma implementação, executar '/specify review', checar spec vs código, ou após '/specify sdd' concluir."
 user-invocable: true
 argument-hint: "Slug da task (ex: 'add-healthcheck')"

@@ -1,5 +1,5 @@
 ---
-name: specify-init
+name: specify.init
 description: "Inicializa o framework specify num projeto: verifica CLI, cria .specify/, detecta stack Go/Python/TS/Rust, gera INDEX.md. Use quando o usuário quiser configurar specify, inicializar SDD num projeto, usar '/specify init', ou começar a usar spec-driven development num repositório."
 user-invocable: true
 argument-hint: "Opcional: caminho do projeto (padrão: diretório atual)"

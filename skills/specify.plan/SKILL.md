@@ -1,5 +1,5 @@
 ---
-name: specify-plan
+name: specify.plan
 description: "Planeja o ciclo de desenvolvimento de uma task: lê spec, valida critérios, propõe fases RED→GREEN→REFACTOR→REVIEW→CLOSE, aguarda aprovação humana e inicializa a task no DB. Use quando o usuário quiser planejar uma implementação, usar '/specify plan', iniciar uma task com spec, ou dizer 'quero implementar <feature>'."
 user-invocable: true
 argument-hint: "Slug da task (ex: 'add-healthcheck'). A spec deve existir em .specify/tasks/<slug>/spec.md"

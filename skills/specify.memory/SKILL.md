@@ -1,5 +1,5 @@
 ---
-name: specify-memory
+name: specify.memory
 description: "Gerencia memórias persistentes do projeto: salva decisões arquiteturais, padrões de código e restrições; busca contexto relevante antes de implementar. Use quando o usuário quiser salvar uma decisão, buscar o que já foi decidido, executar '/specify memory', ou quando perceber que uma decisão importante foi tomada e deve ser persistida."
 user-invocable: true
 argument-hint: "Ação: set|get|list|search|delete. Ex: 'search autenticação' ou 'set decision JWT via lestrrat-go'"

@@ -1,5 +1,5 @@
 ---
-name: specify-sdd
+name: specify.sdd
 description: "Executa o loop RED→GREEN→REFACTOR de uma task com spec: escreve testes (RED), verifica falha, implementa código mínimo (GREEN), verifica pass, roda lint/fmt (REFACTOR). Integrado ao CLI specify para persistência de gates. Use quando o usuário quiser implementar uma task, executar '/specify sdd', rodar red/green/refactor, ou após '/specify plan' ser aprovado."
 user-invocable: true
 argument-hint: "Slug da task (ex: 'add-healthcheck')"

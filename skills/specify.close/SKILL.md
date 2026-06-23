@@ -1,5 +1,5 @@
 ---
-name: specify-close
+name: specify.close
 description: "Fecha uma task: verifica gates obrigatórios, gera result.md, atualiza status para closed, executa commit e MR. Use quando o usuário quiser fechar uma task, entregar uma implementação, executar '/specify close', ou após '/specify review' concluir sem críticos."
 user-invocable: true
 argument-hint: "Slug da task (ex: 'add-healthcheck')"
