@@ -1,8 +1,6 @@
 from src.db.connection import get_connection
 from pathlib import Path
 
-CURRENT_VERSION = 1
-
 _MIGRATION_1 = """
 CREATE TABLE IF NOT EXISTS memories (
     id         INTEGER PRIMARY KEY,
@@ -46,9 +44,19 @@ CREATE TABLE IF NOT EXISTS loop_iterations (
 );
 """
 
+_MIGRATION_2 = """
+CREATE VIRTUAL TABLE IF NOT EXISTS vec_memories USING vec0(
+    memory_id INTEGER PRIMARY KEY,
+    embedding  FLOAT[384]
+);
+"""
+
 MIGRATIONS: dict[int, str] = {
     1: _MIGRATION_1,
+    2: _MIGRATION_2,
 }
+
+CURRENT_VERSION = 2
 
 
 def migrate(conn) -> None:

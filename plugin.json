@@ -4,5 +4,19 @@
   "author": {
     "name": "Lucas Tsouza"
   },
-  "version": "0.1.0"
+  "version": "0.2.0",
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/.venv/bin/python3 ${CLAUDE_PLUGIN_ROOT}/src/hooks/session_start.py",
+            "timeout": 10,
+            "statusMessage": "Loading specify context..."
+          }
+        ]
+      }
+    ]
+  }
 }

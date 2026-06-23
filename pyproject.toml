@@ -4,11 +4,12 @@ build-backend = "hatchling.build"
 
 [project]
 name = "specify"
-version = "0.1.0"
+version = "0.2.0"
 requires-python = ">=3.12"
 dependencies = [
     "click>=8.1",
     "sqlite-vec>=0.1.9",
+    "fastembed>=0.8.0",
 ]
 
 [project.scripts]
