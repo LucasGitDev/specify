@@ -2,16 +2,17 @@
 
 ## Fluxo padrão
 
-Para qualquer feature nova ou bug com spec definida:
+Para qualquer feature nova ou bug:
 
 ```
-/specify plan <slug>    → planejar antes de qualquer código
-/specify sdd <slug>     → RED→GREEN→REFACTOR
-/specify review <slug>  → verificar spec vs implementação
-/specify close <slug>   → gate final, commit, MR
+/specify.new <slug>     → criar spec do zero (entrevista guiada)
+/specify.plan <slug>    → planejar antes de qualquer código
+/specify.sdd <slug>     → RED→GREEN→REFACTOR
+/specify.review <slug>  → verificar spec vs implementação
+/specify.close <slug>   → gate final, commit, MR
 ```
 
-Não pular etapas. Sem spec → usar `/specify plan` para criar.
+Não pular etapas. Se spec já existe, começar pelo `/specify.plan`.
 
 ## Memória — usar proativamente
 

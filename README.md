@@ -121,6 +121,12 @@ Uma spec mínima válida:
 
 ### 4. Executar o fluxo
 
+Se você ainda não tem a spec escrita, use `/specify.new` — ele entrevista e escreve por você:
+```
+/specify.new add-healthcheck
+```
+
+Com a spec pronta:
 ```
 /specify.plan add-healthcheck
 /specify.sdd add-healthcheck
@@ -133,7 +139,8 @@ Uma spec mínima válida:
 | Skill | Quando usar |
 |-------|-------------|
 | `/specify.init` | Configurar specify num projeto novo |
-| `/specify.plan` | Antes de qualquer código — valida spec e propõe ciclo |
+| `/specify.new` | Criar spec de task do zero — entrevista guiada |
+| `/specify.plan` | Spec pronta — valida, propõe ciclo, aguarda aprovação |
 | `/specify.sdd` | Implementar: RED→GREEN→REFACTOR com gates automáticos |
 | `/specify.review` | Revisar adversarialmente antes do merge |
 | `/specify.close` | Gate final, result.md, commit, MR |
