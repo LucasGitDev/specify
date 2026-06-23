@@ -51,12 +51,18 @@ CREATE VIRTUAL TABLE IF NOT EXISTS vec_memories USING vec0(
 );
 """
 
+_MIGRATION_3 = """
+ALTER TABLE tasks ADD COLUMN worktree_path TEXT;
+ALTER TABLE tasks ADD COLUMN worktree_branch TEXT;
+"""
+
 MIGRATIONS: dict[int, str] = {
     1: _MIGRATION_1,
     2: _MIGRATION_2,
+    3: _MIGRATION_3,
 }
 
-CURRENT_VERSION = 2
+CURRENT_VERSION = 3
 
 
 def migrate(conn) -> None:

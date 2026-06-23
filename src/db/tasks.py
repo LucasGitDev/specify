@@ -13,6 +13,8 @@ class Task:
     title: str
     status: str
     spec_path: str | None
+    worktree_path: str | None
+    worktree_branch: str | None
     created_at: str
     updated_at: str
 
@@ -24,6 +26,8 @@ def _row_to_task(row: sqlite3.Row) -> Task:
         title=row["title"],
         status=row["status"],
         spec_path=row["spec_path"],
+        worktree_path=row["worktree_path"],
+        worktree_branch=row["worktree_branch"],
         created_at=row["created_at"],
         updated_at=row["updated_at"],
     )
@@ -34,12 +38,15 @@ def create(
     slug: str,
     title: str,
     spec_path: str | None = None,
+    worktree_path: str | None = None,
+    worktree_branch: str | None = None,
 ) -> int:
     if get(conn, slug) is not None:
         raise ValueError(f"task '{slug}' já existe")
     cur = conn.execute(
-        "INSERT INTO tasks (slug, title, spec_path) VALUES (?, ?, ?)",
-        (slug, title, spec_path),
+        "INSERT INTO tasks (slug, title, spec_path, worktree_path, worktree_branch)"
+        " VALUES (?, ?, ?, ?, ?)",
+        (slug, title, spec_path, worktree_path, worktree_branch),
     )
     conn.commit()
     return cur.lastrowid

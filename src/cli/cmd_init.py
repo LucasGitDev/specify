@@ -56,13 +56,12 @@ def _write_index_md(path: Path, root: Path) -> None:
 
 def _ensure_gitignore(root: Path) -> None:
     gitignore = root / ".gitignore"
-    entry = "specify.db\n"
-    if gitignore.exists():
-        if "specify.db" not in gitignore.read_text():
-            with gitignore.open("a") as f:
-                f.write(entry)
-    else:
-        gitignore.write_text(entry)
+    entries = ["specify.db", ".claude/worktrees/"]
+    existing = gitignore.read_text() if gitignore.exists() else ""
+    additions = [e for e in entries if e not in existing]
+    if additions:
+        with gitignore.open("a") as f:
+            f.write("\n".join(additions) + "\n")
 
 
 @click.command("init")

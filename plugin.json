@@ -2,7 +2,7 @@
   "name": "specify",
   "description": "SDD + TDD + Agentic SDLC framework. Manages specs, memory, and gates per project.",
   "author": {
-    "name": "Lucas Tsouza"
+    "name": "Lucas Teles"
   },
   "version": "0.2.0",
   "hooks": {

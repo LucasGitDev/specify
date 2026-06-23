@@ -1,0 +1,14 @@
+# .worktreeinclude — copiar para a raiz do projeto como .worktreeinclude
+#
+# Claude Code copia os arquivos listados aqui (que sejam gitignored)
+# para cada novo worktree criado automaticamente.
+#
+# Necessário para que `specify` funcione em worktrees isolados.
+
+# Banco specify (estado de tasks e memórias)
+.specify/specify.db
+
+# Variáveis de ambiente locais
+.env
+.env.local
+.env.development

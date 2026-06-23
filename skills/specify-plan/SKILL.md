@@ -93,13 +93,31 @@ Exibir proposta estruturada:
 
 **Aguardar aprovação.** Não avançar sem confirmação explícita.
 
-## Fase 4 — Inicializar task
+## Fase 4 — Decidir worktree vs sessão principal
+
+Usar **worktree isolado** quando:
+- Task afeta muitos arquivos ou leva mais de ~30 min
+- Há outras tasks `in_progress` na sessão atual
+- Usuário quer trabalhar em paralelo com outra tarefa
+
+Usar **sessão principal** quando:
+- Task pequena e focada
+- Nenhum outro worktree ativo no projeto
+
+Se worktree:
+```bash
+specify task create --slug <slug> --title "<título>" --spec <spec_path> --worktree
+# Output inclui: worktree path e instrução para entrar
+```
+
+Se sessão principal:
+```bash
+specify task create --slug <slug> --title "<título>" --spec <spec_path>
+```
+
+## Fase 5 — Inicializar task
 
 ```bash
-# Criar task se não existir
-specify task create --slug <slug> --title "<título>" --spec .specify/tasks/<slug>/spec.md \
-  2>/dev/null || echo "task já existe"
-
 # Marcar como in_progress
 specify task update <slug> --status in_progress
 ```
@@ -109,11 +127,12 @@ Salvar plan.md:
 mkdir -p .specify/tasks/<slug>
 ```
 
-Escrever `.specify/tasks/<slug>/plan.md` com o plano aprovado (fases, critérios, contexto de memória relevante, data).
+Escrever `.specify/tasks/<slug>/plan.md` com o plano aprovado (fases, critérios, decisão de worktree, contexto de memória relevante, data).
 
 Confirmar:
 ```
 Task '<slug>' inicializada.
+Worktree: <path> (branch: specify/<slug>) — ou "sessão principal"
 Próximo passo: /specify sdd <slug>
 ```
 
