@@ -10,15 +10,16 @@ class LangConfig:
     fmt_cmd: str
 
 
-_GO = LangConfig(
-    language="go",
-    test_cmd="go test ./...",
-    lint_cmd="go vet ./...",
-    fmt_cmd="gofmt -l .",
-)
+_CONFIGS: list[tuple[str, LangConfig]] = [
+    ("go.mod",         LangConfig("go",         "go test ./...",  "go vet ./...",          "gofmt -l .")),
+    ("pyproject.toml", LangConfig("python",      "pytest",         "ruff check .",          "ruff format --check .")),
+    ("package.json",   LangConfig("typescript",  "npm test",       "npm run lint",          "prettier --check .")),
+    ("Cargo.toml",     LangConfig("rust",        "cargo test",     "cargo clippy",          "cargo fmt --check")),
+]
 
 
 def detect(root: Path) -> LangConfig | None:
-    if (root / "go.mod").exists():
-        return _GO
+    for marker, config in _CONFIGS:
+        if (root / marker).exists():
+            return config
     return None
