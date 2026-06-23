@@ -1,0 +1,21 @@
+{
+  "name": "specify",
+  "description": "SDD + TDD + Agentic SDLC framework. Manages specs, memory, and gates per project.",
+  "author": {
+    "name": "Lucas Tsouza"
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/.venv/bin/python3 ${CLAUDE_PLUGIN_ROOT}/src/hooks/session_start.py",
+            "timeout": 10,
+            "statusMessage": "Loading specify context..."
+          }
+        ]
+      }
+    ]
+  }
+}

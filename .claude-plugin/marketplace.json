@@ -1,0 +1,16 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "local",
+  "description": "Local plugins.",
+  "owner": {
+    "name": "Lucas Tsouza"
+  },
+  "plugins": [
+    {
+      "name": "specify",
+      "description": "SDD + TDD + Agentic SDLC framework. Manages specs, memory, and gates per project.",
+      "source": "./",
+      "category": "productivity"
+    }
+  ]
+}
