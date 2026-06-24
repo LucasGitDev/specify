@@ -1,0 +1,38 @@
+# SDD Log: debug-mode
+
+**Data**: 2026-06-24
+**Estratégia de commits**: controlado
+
+## RED
+
+- Testes escritos: 7
+- Gate: ✓ fail confirmado (ModuleNotFoundError — módulo não existia)
+- Commit: `test(logger): add failing tests for SPECIFY_DEBUG=1 logging`  (505ff63)
+
+## GREEN
+
+### Critério 1-5: módulo src/core/logger.py
+- Iterações: 1
+- Gate: ✓ 74 testes passando (7 novos + 67 preexistentes)
+- Commit: `feat(logger): add SPECIFY_DEBUG=1 file logging module`  (993751e)
+
+### Critério 1+2: integração CLI e hook
+- Iterações: 1
+- Gate: ✓ pass
+- Commit: `feat(debug): integrate SPECIFY_DEBUG logger into CLI and session_start hook`  (8696a12)
+
+## REFACTOR
+
+- lint: ✓ 1 fix aplicado (CURRENT_VERSION unused), E402 preexistentes ignorados
+- fmt: ✓ 2 arquivos reformatados (session_start.py, test_logger.py)
+- testes pós-refactor: ✓ 74 passando
+- Commit: `style(debug): apply ruff fix and formatter`  (2b0abeb)
+- Fix adicional: `fix(debug): replace removed click.get_os_args with ctx.args`  (7159a70)
+
+## Commits desta fase
+
+7159a70 fix(debug): replace removed click.get_os_args with ctx.args
+2b0abeb style(debug): apply ruff fix and formatter
+8696a12 feat(debug): integrate SPECIFY_DEBUG logger into CLI and session_start hook
+993751e feat(logger): add SPECIFY_DEBUG=1 file logging module
+505ff63 test(logger): add failing tests for SPECIFY_DEBUG=1 logging
