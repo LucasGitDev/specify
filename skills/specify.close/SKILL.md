@@ -59,6 +59,8 @@ Arquivos de `.specify/` (spec, plan, sdd.log) são commitados junto com o `resul
 
 ## Fase 1 — Salvar result.md via CLI
 
+> **OBRIGATÓRIO**: salvar result.md antes de fechar a task.
+
 ```bash
 specify artifact save --task <slug> --type result --content "$(cat <<'RESULT'
 # Result: <slug>
@@ -88,6 +90,7 @@ specify artifact save --task <slug> --type result --content "$(cat <<'RESULT'
 <decisões ou padrões salvos durante a implementação, se houver>
 RESULT
 )"
+```
 
 ## Fase 2 — Fechar task
 

@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """SessionStart hook — injeta contexto do .specify/ na sessão do Claude."""
+
 from __future__ import annotations
 
 import json
@@ -16,7 +17,7 @@ from src.core.logger import get_logger
 from src.core.project import find_project_root
 from src.db import memory as mem_db
 from src.db.connection import get_connection
-from src.db.schema import migrate, CURRENT_VERSION
+from src.db.schema import migrate
 
 
 def _get_session_cwd() -> Path | None:

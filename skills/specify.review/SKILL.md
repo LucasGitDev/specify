@@ -102,6 +102,8 @@ Aguardando orientação humana.
 
 ## Fase 4 — Salvar review.md e registrar gate
 
+> **OBRIGATÓRIO**: salvar review.md antes de registrar o gate.
+
 ```bash
 specify artifact save --task <slug> --type review --content "$(cat <<'REVIEW'
 # Review: <slug>
@@ -126,7 +128,9 @@ specify artifact save --task <slug> --type review --content "$(cat <<'REVIEW'
 <APROVADO — zero críticos | BLOQUEADO — N críticos persistem>
 REVIEW
 )"
+```
 
+Se aprovado (zero críticos):
 ```bash
 specify gate record --task <slug> --phase review --type adversarial --status pass \
   --output "0 críticos, <N> importantes resolvidos, <M> sugestões"

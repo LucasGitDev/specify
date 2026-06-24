@@ -105,7 +105,7 @@ Exibir proposta estruturada:
 
 ## Fase 3.1 — Salvar plan.md via CLI
 
-Assim que o usuário aprovar, salvar via CLI **antes** de qualquer outro comando. O arquivo é a fonte de verdade — não o chat.
+> **OBRIGATÓRIO**: executar este comando imediatamente após aprovação. O arquivo é a fonte de verdade — não o chat.
 
 ```bash
 specify artifact save --task <slug> --type plan --content "$(cat <<'PLAN'
@@ -150,6 +150,11 @@ specify artifact save --task <slug> --type plan --content "$(cat <<'PLAN'
 <"sim — .claude/worktrees/<slug>/ (branch: specify/<slug>)" ou "não — sessão principal">
 PLAN
 )"
+```
+
+Verificar que o arquivo foi salvo:
+```bash
+specify artifact show --task <slug> --type plan
 ```
 
 ## Fase 4 — Decidir worktree vs sessão principal

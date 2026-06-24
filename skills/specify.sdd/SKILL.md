@@ -176,8 +176,9 @@ REFACTOR:
 
 ```bash
 specify gate history --task <slug>
-specify task update <slug> --status review
 ```
+
+> **OBRIGATÓRIO**: salvar sdd.log antes de atualizar o status da task.
 
 ```bash
 specify artifact save --task <slug> --type sdd.log --content "$(cat <<'LOG'
@@ -214,6 +215,11 @@ specify artifact save --task <slug> --type sdd.log --content "$(cat <<'LOG'
 <lista de git log --oneline desde o início da task>
 LOG
 )"
+```
+
+```bash
+specify task update <slug> --status review
+```
 
 ```
 ═══════════════════════════════════════════════════

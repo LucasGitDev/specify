@@ -14,6 +14,7 @@ def _reload_logger(monkeypatch, env: dict):
     if "src.core.logger" in sys.modules:
         del sys.modules["src.core.logger"]
     import src.core.logger as mod
+
     return mod
 
 
