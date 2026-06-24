@@ -5,11 +5,15 @@ from src.cli.cmd_gate import cmd_gate
 from src.cli.cmd_init import cmd_init
 from src.cli.cmd_memory import cmd_memory
 from src.cli.cmd_task import cmd_task
+from src.core.logger import get_logger
 
 
 @click.group()
-def cli() -> None:
+@click.pass_context
+def cli(ctx: click.Context) -> None:
     """specify — SDD + TDD + Agentic SDLC framework."""
+    ctx.ensure_object(dict)
+    get_logger().debug("command: %s", " ".join(click.get_os_args()))
 
 
 cli.add_command(cmd_init)

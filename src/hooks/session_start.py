@@ -12,6 +12,7 @@ _plugin_root = Path(__file__).resolve().parent.parent.parent
 if str(_plugin_root) not in sys.path:
     sys.path.insert(0, str(_plugin_root))
 
+from src.core.logger import get_logger
 from src.core.project import find_project_root
 from src.db import memory as mem_db
 from src.db.connection import get_connection
@@ -61,22 +62,28 @@ def _get_recent_memories(conn) -> dict[str, list[mem_db.Memory]]:
 
 
 def main() -> None:
+    log = get_logger()
     # Preferir CWD da sessão (onde o Claude foi aberto) sobre os.getcwd() (~/.claude)
     session_cwd = _get_session_cwd()
     start = session_cwd or Path.cwd()
+    log.debug("session_start: cwd=%s", start)
 
     root = find_project_root(start)
     if root is None:
+        log.debug("session_start: no project root found, exiting")
         sys.exit(0)
 
     specify_dir = root / ".specify"
     if not specify_dir.exists():
+        log.debug("session_start: .specify/ not found in %s, exiting", root)
         sys.exit(0)
 
     db_path = specify_dir / "specify.db"
     index_md = specify_dir / "INDEX.md"
+    log.debug("session_start: root=%s db=%s", root, db_path)
 
     if not db_path.exists():
+        log.debug("session_start: db not initialized")
         print(
             f"## Specify — aviso\n\n"
             f"`.specify/` encontrado em `{root}` mas banco não inicializado.\n"
@@ -87,8 +94,8 @@ def main() -> None:
     try:
         conn = get_connection(db_path)
         migrate(conn)
-    except Exception as e:
-        # falha silenciosa — não bloquear a sessão
+    except Exception:
+        log.exception("session_start: failed to connect/migrate db at %s", db_path)
         sys.exit(0)
 
     lines: list[str] = [f"## Specify Context — `{root.name}`\n"]
