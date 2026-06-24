@@ -1,10 +1,10 @@
 from __future__ import annotations
 
 import json as _json
-import sys
 
 import click
 
+from src.core.logger import get_logger
 from src.core.project import get_project_paths
 from src.db import memory as mem_db
 from src.db import vectors as vec_db
@@ -47,7 +47,8 @@ def cmd_memory() -> None:
 
 @cmd_memory.command("set")
 @click.option(
-    "--type", "mem_type",
+    "--type",
+    "mem_type",
     required=True,
     type=click.Choice(["decision", "pattern", "constraint"]),
     help="Tipo da memória",
@@ -58,7 +59,9 @@ def cmd_memory() -> None:
 def cmd_set(mem_type: str, content: str, scope: str, source: str | None) -> None:
     """Persiste uma nova memória."""
     conn = _get_conn()
-    memory_id = mem_db.insert(conn, type=mem_type, content=content, scope=scope, source=source)
+    memory_id = mem_db.insert(
+        conn, type=mem_type, content=content, scope=scope, source=source
+    )
 
     provider = get_provider(warn=True)
     if provider.available():
@@ -96,7 +99,12 @@ def cmd_list(scope: str | None, mem_type: str | None, as_json: bool) -> None:
         click.echo("nenhuma memória encontrada")
         return
     if as_json:
-        click.echo(_json.dumps([_json.loads(_format_memory(m, as_json=True)) for m in memories], indent=2))
+        click.echo(
+            _json.dumps(
+                [_json.loads(_format_memory(m, as_json=True)) for m in memories],
+                indent=2,
+            )
+        )
     else:
         for m in memories:
             click.echo(_format_memory(m))
@@ -124,11 +132,17 @@ def cmd_search(query: str, limit: int, as_json: bool) -> None:
         memories = mem_db.search_substring(conn, query, limit=limit)
 
     conn.close()
+    get_logger().debug("memory search: query=%r results=%d", query, len(memories))
     if not memories:
         click.echo("nenhum resultado")
         return
     if as_json:
-        click.echo(_json.dumps([_json.loads(_format_memory(m, as_json=True)) for m in memories], indent=2))
+        click.echo(
+            _json.dumps(
+                [_json.loads(_format_memory(m, as_json=True)) for m in memories],
+                indent=2,
+            )
+        )
     else:
         for m in memories:
             click.echo(_format_memory(m))

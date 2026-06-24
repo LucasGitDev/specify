@@ -7,6 +7,7 @@ import click
 
 from src.core.gate_validator import run_fmt_check, run_lint, run_tests
 from src.core.lang_detector import detect
+from src.core.logger import get_logger
 from src.core.project import get_project_paths
 from src.db import gates as gate_db
 from src.db.connection import get_connection
@@ -31,15 +32,17 @@ def _get_conn():
 
 def _format_gate(g: gate_db.Gate, *, as_json: bool = False) -> str:
     if as_json:
-        return _json.dumps({
-            "id": g.id,
-            "task_slug": g.task_slug,
-            "phase": g.phase,
-            "gate_type": g.gate_type,
-            "status": g.status,
-            "iteration": g.iteration,
-            "created_at": g.created_at,
-        })
+        return _json.dumps(
+            {
+                "id": g.id,
+                "task_slug": g.task_slug,
+                "phase": g.phase,
+                "gate_type": g.gate_type,
+                "status": g.status,
+                "iteration": g.iteration,
+                "created_at": g.created_at,
+            }
+        )
     symbol = "✓" if g.status == "pass" else ("⊘" if g.status == "skip" else "✗")
     return f"{symbol} [{g.phase}/{g.gate_type}] iter={g.iteration}  {g.status}  ({g.created_at})"
 
@@ -77,13 +80,20 @@ def cmd_record(
     )
     conn.close()
     symbol = "✓" if status == "pass" else "✗"
-    click.echo(f"{symbol} gate [{gid}] registrado: {task_slug}/{phase}/{gate_type} → {status}")
+    get_logger().debug(
+        "gate record: %s/%s/%s → %s", task_slug, phase, gate_type, status
+    )
+    click.echo(
+        f"{symbol} gate [{gid}] registrado: {task_slug}/{phase}/{gate_type} → {status}"
+    )
 
 
 @cmd_gate.command("run")
 @click.option("--task", "task_slug", required=True, help="Slug da task")
 @click.option("--phase", required=True, type=click.Choice(_RUN_PHASES))
-@click.option("--cwd", "cwd_path", default=None, help="Diretório do projeto (padrão: CWD)")
+@click.option(
+    "--cwd", "cwd_path", default=None, help="Diretório do projeto (padrão: CWD)"
+)
 @click.option("--iteration", default=1, type=int)
 def cmd_run(task_slug: str, phase: str, cwd_path: str | None, iteration: int) -> None:
     """Executa um gate e registra o resultado no DB."""
@@ -119,6 +129,15 @@ def cmd_run(task_slug: str, phase: str, cwd_path: str | None, iteration: int) ->
     )
     conn.close()
 
+    get_logger().debug(
+        "gate run: %s/%s → %s (%dms) cmd=%r output=%r",
+        task_slug,
+        phase,
+        status,
+        result.duration_ms,
+        result.command,
+        (result.output or "")[:2000],
+    )
     click.echo(f"{symbol} {phase}: {status} ({result.duration_ms}ms)")
     click.echo(f"  cmd: {result.command}")
     if result.output:
@@ -141,7 +160,11 @@ def cmd_history(task_slug: str, phase: str | None, as_json: bool) -> None:
         click.echo("nenhum gate registrado")
         return
     if as_json:
-        click.echo(_json.dumps([_json.loads(_format_gate(g, as_json=True)) for g in gates], indent=2))
+        click.echo(
+            _json.dumps(
+                [_json.loads(_format_gate(g, as_json=True)) for g in gates], indent=2
+            )
+        )
     else:
         for g in gates:
             click.echo(_format_gate(g))

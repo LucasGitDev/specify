@@ -42,6 +42,10 @@ def get_logger() -> logging.Logger:
     return _logger
 
 
+def get_log_path() -> Path:
+    return Path(os.environ.get(_LOG_PATH_ENV, _DEFAULT_LOG))
+
+
 def reset() -> None:
     """Reset cached logger — for use in tests only."""
     global _logger

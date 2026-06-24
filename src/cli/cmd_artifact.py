@@ -5,6 +5,7 @@ from pathlib import Path
 
 import click
 
+from src.core.logger import get_logger
 from src.core.project import get_project_paths
 
 _VALID_ARTIFACTS = ["spec", "plan", "sdd.log", "review", "result"]
@@ -50,6 +51,7 @@ def cmd_save(slug: str, artifact: str, content: str | None) -> None:
 
     dest = _artifact_path(paths.tasks_dir, slug, artifact)
     dest.write_text(content)
+    get_logger().debug("artifact save: %s | content[:200]=%r", dest, content[:200])
     click.echo(f"✓ {dest.relative_to(paths.specify_dir.parent)} salvo")
 
 

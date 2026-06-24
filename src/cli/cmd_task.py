@@ -4,6 +4,7 @@ import json as _json
 
 import click
 
+from src.core.logger import get_logger
 from src.core.project import find_project_root, get_project_paths
 from src.core import worktree as wt
 from src.db import tasks as task_db
@@ -26,15 +27,17 @@ def _get_conn():
 
 def _format_task(t: task_db.Task, *, as_json: bool = False) -> str:
     if as_json:
-        return _json.dumps({
-            "slug": t.slug,
-            "title": t.title,
-            "status": t.status,
-            "spec_path": t.spec_path,
-            "worktree_path": t.worktree_path,
-            "worktree_branch": t.worktree_branch,
-            "created_at": t.created_at,
-        })
+        return _json.dumps(
+            {
+                "slug": t.slug,
+                "title": t.title,
+                "status": t.status,
+                "spec_path": t.spec_path,
+                "worktree_path": t.worktree_path,
+                "worktree_branch": t.worktree_branch,
+                "created_at": t.created_at,
+            }
+        )
     spec = f" [{t.spec_path}]" if t.spec_path else ""
     wt_info = f" [worktree: {t.worktree_branch}]" if t.worktree_branch else ""
     return f"[{t.slug}] {t.status}{spec}{wt_info}\n    {t.title}"
@@ -79,6 +82,9 @@ def cmd_create(slug: str, title: str, spec_path: str | None, worktree: bool) -> 
             worktree_branch=worktree_branch,
         )
         conn.close()
+        get_logger().debug(
+            "task create: slug=%s id=%s worktree=%s", slug, task_id, worktree_branch
+        )
         click.echo(f"task '{slug}' criada (id={task_id})")
         if worktree_branch:
             click.echo(f"  worktree: {worktree_path}")
@@ -89,6 +95,7 @@ def cmd_create(slug: str, title: str, spec_path: str | None, worktree: bool) -> 
             # rollback: remover worktree criado
             try:
                 from pathlib import Path
+
                 wt.remove(find_project_root(), Path(worktree_path), force=True)
             except Exception:
                 pass
@@ -113,7 +120,11 @@ def cmd_list(status: str | None, as_json: bool) -> None:
         click.echo("nenhuma task encontrada")
         return
     if as_json:
-        click.echo(_json.dumps([_json.loads(_format_task(t, as_json=True)) for t in tasks], indent=2))
+        click.echo(
+            _json.dumps(
+                [_json.loads(_format_task(t, as_json=True)) for t in tasks], indent=2
+            )
+        )
     else:
         for t in tasks:
             click.echo(_format_task(t))
@@ -148,6 +159,7 @@ def cmd_update(slug: str, status: str) -> None:
         raise click.ClickException(f"task '{slug}' não encontrada")
     task_db.update_status(conn, slug, status)
     conn.close()
+    get_logger().debug("task update: %s → %s", slug, status)
     click.echo(f"task '{slug}' → {status}")
 
 
@@ -163,6 +175,7 @@ def cmd_close(slug: str, remove_worktree: bool) -> None:
         raise click.ClickException(f"task '{slug}' não encontrada")
     task_db.update_status(conn, slug, "closed")
     conn.close()
+    get_logger().debug("task close: %s", slug)
     click.echo(f"task '{slug}' fechada")
 
     if t.worktree_path and remove_worktree:
@@ -170,6 +183,7 @@ def cmd_close(slug: str, remove_worktree: bool) -> None:
         if root:
             try:
                 from pathlib import Path
+
                 wt.remove(root, Path(t.worktree_path))
                 click.echo(f"  worktree removido: {t.worktree_path}")
             except RuntimeError as e:
