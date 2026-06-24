@@ -2,6 +2,8 @@
 """SessionStart hook — injeta contexto do .specify/ na sessão do Claude."""
 from __future__ import annotations
 
+import json
+import os
 import sys
 from pathlib import Path
 
@@ -14,6 +16,25 @@ from src.core.project import find_project_root
 from src.db import memory as mem_db
 from src.db.connection import get_connection
 from src.db.schema import migrate, CURRENT_VERSION
+
+
+def _get_session_cwd() -> Path | None:
+    """
+    Hooks rodam com CWD=~/.claude, não o diretório do projeto.
+    Claude Code persiste o CWD real em ~/.claude/sessions/<session_id>.json.
+    """
+    session_id = os.environ.get("CLAUDE_CODE_SESSION_ID")
+    if not session_id:
+        return None
+    session_file = Path.home() / ".claude" / "sessions" / f"{session_id}.json"
+    if not session_file.exists():
+        return None
+    try:
+        data = json.loads(session_file.read_text())
+        cwd = data.get("cwd")
+        return Path(cwd) if cwd else None
+    except Exception:
+        return None
 
 
 def _read_index(index_md: Path) -> str:
@@ -40,7 +61,11 @@ def _get_recent_memories(conn) -> dict[str, list[mem_db.Memory]]:
 
 
 def main() -> None:
-    root = find_project_root()
+    # Preferir CWD da sessão (onde o Claude foi aberto) sobre os.getcwd() (~/.claude)
+    session_cwd = _get_session_cwd()
+    start = session_cwd or Path.cwd()
+
+    root = find_project_root(start)
     if root is None:
         sys.exit(0)
 
