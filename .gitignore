@@ -4,5 +4,8 @@ __pycache__/
 .venv/
 dist/
 *.egg-info/
-.specify/
+# .specify/ é versionado neste repo (override do gitignore global)
+!.specify/
+.specify/specify.db
 .coverage
+.claude/worktrees/
