@@ -13,7 +13,7 @@ from src.core.logger import get_logger
 def cli(ctx: click.Context) -> None:
     """specify — SDD + TDD + Agentic SDLC framework."""
     ctx.ensure_object(dict)
-    get_logger().debug("command: %s", " ".join(click.get_os_args()))
+    get_logger().debug("command: %s", " ".join(ctx.args))
 
 
 cli.add_command(cmd_init)
