@@ -57,11 +57,10 @@ Commitando mudanças de código pendentes antes de fechar...
 Se houver código pendente (não apenas `.specify/`): commitar com a estratégia definida no `plan.md`.
 Arquivos de `.specify/` (spec, plan, sdd.log) são commitados junto com o `result.md` no commit de encerramento.
 
-## Fase 1 — Gerar result.md
+## Fase 1 — Salvar result.md via CLI
 
-Escrever `.specify/tasks/<slug>/result.md`:
-
-```markdown
+```bash
+specify artifact save --task <slug> --type result --content "$(cat <<'RESULT'
 # Result: <slug>
 
 **Status**: CLOSED  
@@ -87,7 +86,8 @@ Escrever `.specify/tasks/<slug>/result.md`:
 ## Memórias geradas
 
 <decisões ou padrões salvos durante a implementação, se houver>
-```
+RESULT
+)"
 
 ## Fase 2 — Fechar task
 

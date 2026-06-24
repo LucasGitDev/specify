@@ -179,9 +179,8 @@ specify gate history --task <slug>
 specify task update <slug> --status review
 ```
 
-Salvar `.specify/tasks/<slug>/sdd.log`:
-
-```markdown
+```bash
+specify artifact save --task <slug> --type sdd.log --content "$(cat <<'LOG'
 # SDD Log: <slug>
 
 **Data**: <data>
@@ -213,7 +212,8 @@ Salvar `.specify/tasks/<slug>/sdd.log`:
 ## Commits desta fase
 
 <lista de git log --oneline desde o início da task>
-```
+LOG
+)"
 
 ```
 ═══════════════════════════════════════════════════

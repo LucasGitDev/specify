@@ -103,11 +103,12 @@ Exibir proposta estruturada:
 
 **Aguardar aprovação e estratégia de commits.** Não avançar sem confirmação explícita de ambos.
 
-## Fase 3.1 — Salvar plan.md imediatamente após aprovação
+## Fase 3.1 — Salvar plan.md via CLI
 
-Assim que o usuário aprovar, escrever `.specify/tasks/<slug>/plan.md` **antes** de qualquer comando CLI. O arquivo é a fonte de verdade do plano — não o chat.
+Assim que o usuário aprovar, salvar via CLI **antes** de qualquer outro comando. O arquivo é a fonte de verdade — não o chat.
 
-```markdown
+```bash
+specify artifact save --task <slug> --type plan --content "$(cat <<'PLAN'
 # Plan: <slug>
 
 **Data**: <data atual>
@@ -147,11 +148,8 @@ Assim que o usuário aprovar, escrever `.specify/tasks/<slug>/plan.md` **antes**
 ## Worktree
 
 <"sim — .claude/worktrees/<slug>/ (branch: specify/<slug>)" ou "não — sessão principal">
-```
-
-Confirmar escrita:
-```bash
-cat .specify/tasks/<slug>/plan.md
+PLAN
+)"
 ```
 
 ## Fase 4 — Decidir worktree vs sessão principal

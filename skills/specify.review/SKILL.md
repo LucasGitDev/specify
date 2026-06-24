@@ -102,9 +102,8 @@ Aguardando orientação humana.
 
 ## Fase 4 — Salvar review.md e registrar gate
 
-Salvar `.specify/tasks/<slug>/review.md`:
-
-```markdown
+```bash
+specify artifact save --task <slug> --type review --content "$(cat <<'REVIEW'
 # Review: <slug>
 
 **Data**: <data>
@@ -125,7 +124,8 @@ Salvar `.specify/tasks/<slug>/review.md`:
 ## Resultado
 
 <APROVADO — zero críticos | BLOQUEADO — N críticos persistem>
-```
+REVIEW
+)"
 
 ```bash
 specify gate record --task <slug> --phase review --type adversarial --status pass \

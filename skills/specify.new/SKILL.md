@@ -64,14 +64,16 @@ Não fazer todas de uma vez. Se a resposta a uma pergunta já responde a próxim
 
 Se o contexto do INDEX.md ou da memória já responder alguma pergunta, não perguntar — usar o contexto.
 
-## Fase 4 — Escrever a spec
+## Fase 4 — Salvar spec via CLI
 
-Criar o arquivo:
 ```bash
-mkdir -p .specify/tasks/<slug>
+specify artifact save --task <slug> --type spec --content "$(cat <<'SPEC'
+<conteúdo da spec>
+SPEC
+)"
 ```
 
-Escrever `.specify/tasks/<slug>/spec.md` seguindo o template:
+O template de conteúdo:
 
 ```markdown
 # <Título claro e imperativo>
