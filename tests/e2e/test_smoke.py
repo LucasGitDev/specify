@@ -1,12 +1,23 @@
 """Smoke tests end-to-end: testa o fluxo CLI completo num projeto Go temporário."""
 from __future__ import annotations
 
+import shutil
 import subprocess
 from pathlib import Path
 
 import pytest
 
-SPECIFY = str(Path(__file__).resolve().parent.parent.parent / ".venv" / "bin" / "specify")
+def _find_specify() -> str:
+    # prefer venv-local binary (dev), fall back to PATH (CI --system install)
+    venv_bin = Path(__file__).resolve().parent.parent.parent / ".venv" / "bin" / "specify"
+    if venv_bin.exists():
+        return str(venv_bin)
+    system_bin = shutil.which("specify")
+    if system_bin:
+        return system_bin
+    raise RuntimeError("specify binary not found in .venv or PATH")
+
+SPECIFY = _find_specify()
 
 
 @pytest.fixture
