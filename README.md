@@ -19,6 +19,8 @@
 
 Plugin [Claude Code](https://claude.ai/code) que implementa **Spec-Driven Development (SDD)** com TDD e Agentic SDLC como um fluxo coeso — do planejamento ao merge, com estado persistente por projeto.
 
+**→ [Como funciona em detalhe](docs/how-it-works.md)**
+
 ## Por que
 
 Agentes de IA são rápidos mas propensos a drift: começam a implementar antes de entender o problema, perdem contexto entre sessões, e entregam código que passa nos testes mas não atende ao requisito real.
