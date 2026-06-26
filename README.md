@@ -5,14 +5,11 @@
 </p>
 
 <p align="center">
-  <a href="#por-que">Por que</a> •
-  <a href="#como-funciona">Como funciona</a> •
-  <a href="#instalação">Instalação</a> •
-  <a href="#primeiro-uso">Primeiro uso</a> •
-  <a href="#skills">Skills</a> •
-  <a href="#cli">CLI</a> •
-  <a href="#worktrees">Worktrees</a> •
-  <a href="#contribuindo">Contribuindo</a>
+  <a href="https://github.com/LucasGitDev/specify/actions/workflows/ci.yml">
+    <img src="https://github.com/LucasGitDev/specify/actions/workflows/ci.yml/badge.svg" alt="CI">
+  </a>
+  <img src="https://img.shields.io/badge/python-3.12%2B-blue" alt="Python 3.12+">
+  <img src="https://img.shields.io/badge/claude--code-plugin-orange" alt="Claude Code plugin">
 </p>
 
 ---
@@ -65,21 +62,19 @@ Não é sobre ter um agente mais inteligente. É sobre um processo que não deix
 
 ## Instalação
 
+**Requisitos:** Python 3.12+, Claude Code, Git.
+
 ```bash
-git clone <repo-url> ~/projects/specify
+git clone https://github.com/LucasGitDev/specify.git ~/projects/specify
 cd ~/projects/specify
 bash install.sh
 ```
 
 `install.sh` instala [uv](https://github.com/astral-sh/uv) se ausente, cria o venv, registra as skills e o hook. Sem sudo. Reinicie o Claude Code depois.
 
-Verifique:
 ```bash
-specify --help          # CLI disponível
-# /specify.init         # skill disponível no Claude Code
+specify --help   # verifica instalação
 ```
-
-**Requisitos:** Python 3.12+, Claude Code, Git. uv é instalado automaticamente.
 
 ## Primeiro uso
 
@@ -98,35 +93,18 @@ Cria `.specify/` com banco de dados e `INDEX.md` com a stack detectada automatic
 $EDITOR .specify/INDEX.md
 ```
 
-Adicione arquitetura e restrições reais do projeto. Esse arquivo é o contexto que o agente lê em toda sessão.
+Adicione arquitetura e restrições reais do projeto. Esse arquivo é o contexto injetado em toda sessão.
 
-### 3. Escrever a spec
+### 3. Criar a spec e executar o fluxo
 
-```bash
-mkdir -p .specify/tasks/add-healthcheck
-$EDITOR .specify/tasks/add-healthcheck/spec.md
-```
+Se não tem spec escrita, use `/specify.new` — ele entrevista e escreve por você:
 
-Uma spec mínima válida:
-
-```markdown
-# Adicionar endpoint de healthcheck
-
-## Critérios de Sucesso
-
-- GET /health retorna 200 com `{"status": "ok"}`
-- GET /health retorna 503 se dependência crítica estiver indisponível
-- Latência do endpoint não bloqueia outras rotas
-```
-
-### 4. Executar o fluxo
-
-Se você ainda não tem a spec escrita, use `/specify.new` — ele entrevista e escreve por você:
 ```
 /specify.new add-healthcheck
 ```
 
 Com a spec pronta:
+
 ```
 /specify.plan add-healthcheck
 /specify.sdd add-healthcheck
@@ -148,8 +126,6 @@ Com a spec pronta:
 
 ## CLI
 
-O CLI `specify` é a camada de persistência que as skills usam. Você pode chamar diretamente também.
-
 ```bash
 # Tasks
 specify task create --slug <slug> --title "<título>"
@@ -158,18 +134,18 @@ specify task update <slug> --status in_progress
 specify task close <slug>
 
 # Gates
-specify gate run --task <slug> --phase tests    # executa go test ./... e registra
+specify gate run --task <slug> --phase tests
 specify gate run --task <slug> --phase lint
 specify gate history --task <slug>
 
-# Memória (busca semântica por padrão, substring como fallback)
-specify memory set --type decision --content "JWT via lestrrat-go/jwx/v3"
-specify memory set --type pattern  --content "handlers em api/, lógica em pkg/service/"
-specify memory search "autenticação"
+# Memória
+specify memory set --type decision --content "<decisão>"
+specify memory set --type pattern  --content "<padrão>"
+specify memory search "<query>"
 specify memory list --type decision
 ```
 
-## Estrutura `.specify/` no projeto
+## Estrutura `.specify/`
 
 ```
 .specify/
@@ -177,54 +153,48 @@ specify memory list --type decision
 ├── specify.db        ← estado persistente (gitignored automaticamente)
 └── tasks/
     └── <slug>/
-        ├── spec.md   ← fonte de verdade da task (você escreve)
-        ├── plan.md   ← ciclo aprovado (gerado pelo /specify.plan)
-        ├── gates.md  ← histórico de gates human-readable
-        └── result.md ← resultado final (gerado pelo /specify.close)
+        ├── spec.md   ← fonte de verdade da task
+        ├── plan.md   ← ciclo aprovado
+        ├── gates.md  ← histórico de gates
+        └── result.md ← resultado final
 ```
 
 ## Worktrees
 
-Tasks longas ou paralelas podem rodar em worktrees isolados — arquivos separados, sem conflito:
+Tasks longas ou paralelas podem rodar em worktrees isolados:
 
 ```bash
 specify task create --slug minha-task --title "..." --worktree
 # cria .claude/worktrees/minha-task/ com branch specify/minha-task
 ```
 
-Adicione `.worktreeinclude` na raiz do projeto para que o `specify.db` seja copiado automaticamente para novos worktrees:
+Adicione `.worktreeinclude` na raiz para que o `specify.db` seja copiado automaticamente:
 
 ```bash
 cp ~/projects/specify/templates/worktreeinclude ./.worktreeinclude
 ```
 
-## Memória vetorial
+## Memória semântica
 
-O specify usa [fastembed](https://github.com/qdrant/fastembed) (modelo `BAAI/bge-small-en-v1.5`, ONNX, ~90MB local) para busca semântica nas memórias. Sem API key, sem GPU.
-
-O modelo é baixado automaticamente na primeira chamada a `specify memory set` ou `memory search`.
-
-Se fastembed não estiver disponível, a busca cai para substring silenciosamente.
+O specify usa [fastembed](https://github.com/qdrant/fastembed) (`BAAI/bge-small-en-v1.5`, ONNX, ~90MB local) para busca semântica nas memórias. Sem API key, sem GPU. Se fastembed não estiver disponível, cai para substring silenciosamente.
 
 ## Contribuindo
 
 ```bash
-git clone <repo-url> ~/projects/specify
+git clone https://github.com/LucasGitDev/specify.git ~/projects/specify
 cd ~/projects/specify
-task setup            # cria venv e instala deps
-task test             # 67 testes unitários
-task test:e2e         # 12 smoke tests end-to-end
-task dev:install      # instala em modo dev (symlinks + hook)
+task setup        # cria venv e instala deps
+task test         # testes unitários
+task test:e2e     # smoke tests end-to-end
+task dev:install  # instala em modo dev (symlinks + hook)
 ```
 
-Para editar as skills basta editar os arquivos em `skills/specify.*/SKILL.md` — as mudanças refletem na próxima sessão Claude Code sem reinstalar.
+Para editar skills: `skills/specify.*/SKILL.md` — as mudanças refletem na próxima sessão sem reinstalar.
 
-Para adicionar um novo comando CLI: adicione em `src/cli/cmd_*.py`, registre em `src/cli/main.py`, escreva testes em `tests/unit/`.
-
-**79 testes passando (67 unitários + 12 e2e).**
+Para novo comando CLI: adicione em `src/cli/cmd_*.py`, registre em `src/cli/main.py`, escreva testes em `tests/unit/`.
 
 ---
 
 <p align="center">
-  <sub>specify é um projeto privado. não esqueça de inicializar com <code>specify init</code> antes de usar.</sub>
+  <sub>specify é um projeto privado. inicialize com <code>specify init</code> antes de usar.</sub>
 </p>
