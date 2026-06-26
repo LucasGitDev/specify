@@ -1,8 +1,7 @@
 from pathlib import Path
 
-import pytest
 
-from src.core.lang_detector import LangConfig, detect
+from src.core.lang_detector import detect
 from src.core.project import find_project_root, get_project_paths
 
 FIXTURES = Path(__file__).parent.parent / "fixtures"

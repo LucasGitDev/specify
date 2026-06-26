@@ -1,7 +1,7 @@
 import pytest
 
 from src.db.connection import get_connection
-from src.db.gates import Gate, history, iterations, last, record, record_iteration
+from src.db.gates import history, iterations, last, record, record_iteration
 from src.db.schema import migrate
 
 

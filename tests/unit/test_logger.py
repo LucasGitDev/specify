@@ -1,11 +1,8 @@
 from __future__ import annotations
 
-import importlib
 import logging
 import sys
-from pathlib import Path
 
-import pytest
 
 
 def _reload_logger(monkeypatch, env: dict):
@@ -64,7 +61,7 @@ def test_debug_log_appends(monkeypatch, tmp_path):
     logger = mod.get_logger()
     logger.info("first")
     logger.info("second")
-    lines = [l for l in log_file.read_text().splitlines() if l.strip()]
+    lines = [line for line in log_file.read_text().splitlines() if line.strip()]
     assert len(lines) == 2
 
 

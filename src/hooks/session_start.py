@@ -13,11 +13,11 @@ _plugin_root = Path(__file__).resolve().parent.parent.parent
 if str(_plugin_root) not in sys.path:
     sys.path.insert(0, str(_plugin_root))
 
-from src.core.logger import get_logger
-from src.core.project import find_project_root
-from src.db import memory as mem_db
-from src.db.connection import get_connection
-from src.db.schema import migrate
+from src.core.logger import get_logger  # noqa: E402
+from src.core.project import find_project_root  # noqa: E402
+from src.db import memory as mem_db  # noqa: E402
+from src.db.connection import get_connection  # noqa: E402
+from src.db.schema import migrate  # noqa: E402
 
 
 def _get_session_cwd() -> Path | None:

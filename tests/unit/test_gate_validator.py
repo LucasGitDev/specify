@@ -1,8 +1,7 @@
 from pathlib import Path
 
-import pytest
 
-from src.core.gate_validator import GateResult, run_gate
+from src.core.gate_validator import run_gate
 from src.core.spec_reader import extract_criteria, validate
 
 FIXTURES = Path(__file__).parent.parent / "fixtures"
