@@ -1,0 +1,34 @@
+# SDD Log: update-readme
+
+**Data**: 2026-06-26
+**Estratégia de commits**: automático
+
+## RED
+
+- Não aplicável (task é infra + doc, sem código testável)
+
+## GREEN
+
+### Critério 1: GitHub Actions CI
+- Arquivo: .github/workflows/ci.yml
+- Commit: `feat(ci): add GitHub Actions workflow with lint, unit and e2e tests`
+
+### Critério 2-6: README reescrito
+- Badges de CI apontando para LucasGitDev/specify
+- Sem contagens hardcoded de testes
+- URL do repo preenchida
+- Seção Contribuindo alinhada com Taskfile real
+- Commit: `feat(readme): rewrite with CI badges and accurate content`
+
+## REFACTOR
+
+- lint: 17 erros pre-existentes corrigidos (11 via --fix, 6 manuais)
+- fmt: sem diff adicional
+- testes pós-refactor: 97 passando
+- Commit: `style(lint): fix ruff warnings across src and tests`
+
+## Commits desta fase
+
+feat(ci): add GitHub Actions workflow with lint, unit and e2e tests
+feat(readme): rewrite with CI badges and accurate content
+style(lint): fix ruff warnings across src and tests
