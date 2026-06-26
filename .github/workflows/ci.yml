@@ -28,14 +28,29 @@ jobs:
       - name: Lint
         run: ruff check src/ tests/
 
+      - name: Cache fastembed model
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/specify/embeddings
+          key: fastembed-bge-small-en-v1.5
+
       - name: Unit tests
         run: pytest tests/unit/ -v --cov=src --cov-report=xml --cov-report=term-missing
 
       - name: E2E tests
         run: pytest tests/e2e/ -v
 
-      - name: Upload coverage
-        uses: actions/upload-artifact@v4
-        with:
-          name: coverage
-          path: coverage.xml
+      - name: Generate coverage badge
+        if: github.ref == 'refs/heads/main'
+        run: |
+          uv pip install genbadge[coverage] --system
+          genbadge coverage -i coverage.xml -o badges/coverage.svg
+
+      - name: Commit coverage badge
+        if: github.ref == 'refs/heads/main'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add badges/coverage.svg
+          git diff --cached --quiet || git commit -m "chore(ci): update coverage badge [skip ci]"
+          git push

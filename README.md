@@ -8,6 +8,9 @@
   <a href="https://github.com/LucasGitDev/specify/actions/workflows/ci.yml">
     <img src="https://github.com/LucasGitDev/specify/actions/workflows/ci.yml/badge.svg" alt="CI">
   </a>
+  <a href="https://github.com/LucasGitDev/specify/actions/workflows/ci.yml">
+    <img src="badges/coverage.svg" alt="Coverage">
+  </a>
   <img src="https://img.shields.io/badge/python-3.12%2B-blue" alt="Python 3.12+">
   <img src="https://img.shields.io/badge/claude--code-plugin-orange" alt="Claude Code plugin">
 </p>
