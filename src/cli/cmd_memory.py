@@ -160,3 +160,9 @@ def cmd_delete(memory_id: int) -> None:
     mem_db.delete(conn, memory_id)
     conn.close()
     click.echo(f"memória [{memory_id}] removida")
+
+
+# late import to avoid circular
+from src.cli.cmd_harvest import cmd_harvest  # noqa: E402
+
+cmd_memory.add_command(cmd_harvest)
