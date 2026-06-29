@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>specify studio</title>
+  <script src="https://cdn.jsdelivr.net/npm/graphology@0.25.4/dist/graphology.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sigma@2.4.0/build/sigma.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      display: flex;
+      height: 100vh;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #0d1117;
+      color: #c9d1d9;
+    }
+
+    #graph-container {
+      flex: 1;
+      position: relative;
+    }
+
+    #toolbar {
+      position: absolute;
+      top: 12px;
+      left: 12px;
+      display: flex;
+      gap: 8px;
+      z-index: 10;
+    }
+
+    .legend {
+      position: absolute;
+      bottom: 16px;
+      left: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      z-index: 10;
+      background: rgba(13,17,23,0.85);
+      border: 1px solid #30363d;
+      border-radius: 8px;
+      padding: 10px 14px;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      color: #8b949e;
+    }
+
+    .legend-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    button {
+      background: #21262d;
+      border: 1px solid #30363d;
+      color: #c9d1d9;
+      padding: 6px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 13px;
+      transition: background 0.15s;
+    }
+
+    button:hover { background: #30363d; }
+
+    #sidebar {
+      width: 320px;
+      background: #161b22;
+      border-left: 1px solid #30363d;
+      display: flex;
+      flex-direction: column;
+      padding: 20px;
+      gap: 16px;
+      overflow-y: auto;
+      transition: width 0.2s;
+    }
+
+    #sidebar.hidden { width: 0; padding: 0; overflow: hidden; }
+
+    #sidebar h2 {
+      font-size: 14px;
+      font-weight: 600;
+      color: #e6edf3;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .field-label {
+      font-size: 11px;
+      color: #8b949e;
+      margin-bottom: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+
+    .badge-decision  { background: #1f3a5f; color: #79c0ff; }
+    .badge-pattern   { background: #1a3a2a; color: #56d364; }
+    .badge-constraint{ background: #3d1e1e; color: #f97583; }
+
+    textarea {
+      width: 100%;
+      min-height: 120px;
+      background: #0d1117;
+      border: 1px solid #30363d;
+      border-radius: 6px;
+      color: #c9d1d9;
+      font-size: 13px;
+      font-family: inherit;
+      padding: 8px;
+      resize: vertical;
+      line-height: 1.5;
+    }
+
+    textarea:focus { outline: none; border-color: #58a6ff; }
+
+    .btn-save {
+      background: #238636;
+      border-color: #2ea043;
+      color: #fff;
+    }
+    .btn-save:hover { background: #2ea043; }
+
+    .btn-delete {
+      background: transparent;
+      border-color: #f85149;
+      color: #f85149;
+    }
+    .btn-delete:hover { background: #3d1e1e; }
+
+    .meta-row {
+      font-size: 12px;
+      color: #8b949e;
+    }
+
+    #empty-state {
+      color: #8b949e;
+      font-size: 13px;
+      text-align: center;
+      margin-top: 40px;
+    }
+
+    #stats {
+      position: absolute;
+      bottom: 16px;
+      right: 16px;
+      font-size: 11px;
+      color: #8b949e;
+      z-index: 10;
+    }
+  </style>
+</head>
+<body>
+
+<div id="graph-container">
+  <div id="toolbar">
+    <button onclick="reloadGraph()">Reload</button>
+    <button onclick="toggleSidebar()">Panel</button>
+    <button onclick="resetLayout()">Reset layout</button>
+  </div>
+  <div class="legend">
+    <div class="legend-item"><span class="legend-dot" style="background:#79c0ff"></span>decision</div>
+    <div class="legend-item"><span class="legend-dot" style="background:#56d364"></span>pattern</div>
+    <div class="legend-item"><span class="legend-dot" style="background:#f97583"></span>constraint</div>
+  </div>
+  <div id="stats"></div>
+</div>
+
+<div id="sidebar">
+  <div id="empty-state">Click a node to inspect</div>
+  <div id="node-detail" style="display:none; gap:16px; flex-direction:column;">
+    <div>
+      <div class="field-label">Type</div>
+      <span id="detail-badge" class="badge"></span>
+    </div>
+    <div>
+      <div class="field-label">Scope</div>
+      <span id="detail-scope" class="meta-row"></span>
+    </div>
+    <div id="detail-source-row" style="display:none">
+      <div class="field-label">Source</div>
+      <span id="detail-source" class="meta-row"></span>
+    </div>
+    <div>
+      <div class="field-label">Content</div>
+      <textarea id="detail-content"></textarea>
+    </div>
+    <div style="display:flex; gap:8px;">
+      <button class="btn-save" onclick="saveMemory()">Save</button>
+      <button class="btn-delete" onclick="deleteMemory()">Delete</button>
+    </div>
+    <div>
+      <div class="field-label">Updated</div>
+      <span id="detail-updated" class="meta-row"></span>
+    </div>
+  </div>
+</div>
+
+<script>
+const TYPE_COLORS = {
+  decision:   '#79c0ff',
+  pattern:    '#56d364',
+  constraint: '#f97583',
+};
+
+let sigmaInstance = null;
+let graphInstance = null;
+let selectedNodeId = null;
+
+async function loadGraph() {
+  const res = await fetch('/api/graph');
+  return res.json();
+}
+
+function buildSigmaGraph(data) {
+  const g = new graphology.Graph({ multi: false, type: 'undirected' });
+
+  data.nodes.forEach(n => {
+    const color = TYPE_COLORS[n.type] || '#8b949e';
+    // truncate label for readability
+    const shortLabel = n.label.length > 40 ? n.label.slice(0, 40) + '…' : n.label;
+    g.addNode(n.id, {
+      label: shortLabel,
+      fullLabel: n.label,
+      type: n.type,
+      scope: n.scope,
+      source: n.source,
+      color,
+      size: 10,
+      x: Math.random() * 100,
+      y: Math.random() * 100,
+    });
+  });
+
+  data.edges.forEach(e => {
+    if (g.hasNode(e.source) && g.hasNode(e.target) && !g.hasEdge(e.source, e.target)) {
+      g.addEdge(e.source, e.target, {
+        weight: e.weight,
+        color: 'rgba(139,148,158,0.25)',
+        size: Math.max(0.5, e.weight * 2),
+      });
+    }
+  });
+
+  return g;
+}
+
+function applyLayout(g) {
+  if (g.order === 0) return;
+  // Simple force-directed layout: repulsion + edge attraction, no external dep.
+  const nodes = g.nodes();
+  const N = nodes.length;
+  const pos = {};
+  nodes.forEach((id, i) => {
+    const a = (2 * Math.PI * i) / N;
+    pos[id] = { x: Math.cos(a) * 50, y: Math.sin(a) * 50 };
+  });
+  for (let iter = 0; iter < 120; iter++) {
+    const disp = {};
+    nodes.forEach(id => { disp[id] = { x: 0, y: 0 }; });
+    // repulsion
+    for (let i = 0; i < N; i++) {
+      for (let j = i + 1; j < N; j++) {
+        const a = nodes[i], b = nodes[j];
+        const dx = pos[a].x - pos[b].x;
+        const dy = pos[a].y - pos[b].y;
+        const d2 = dx * dx + dy * dy + 0.01;
+        const f = 400 / d2;
+        disp[a].x += dx * f; disp[a].y += dy * f;
+        disp[b].x -= dx * f; disp[b].y -= dy * f;
+      }
+    }
+    // attraction
+    g.edges().forEach(e => {
+      const s = g.source(e), t = g.target(e);
+      const dx = pos[s].x - pos[t].x;
+      const dy = pos[s].y - pos[t].y;
+      const d = Math.sqrt(dx * dx + dy * dy) + 0.01;
+      const f = d / 10;
+      disp[s].x -= dx * f; disp[s].y -= dy * f;
+      disp[t].x += dx * f; disp[t].y += dy * f;
+    });
+    // gravity toward center
+    nodes.forEach(id => {
+      disp[id].x -= pos[id].x * 0.02;
+      disp[id].y -= pos[id].y * 0.02;
+    });
+    // apply displacement
+    const temp = Math.max(0.5, 5 * (1 - iter / 120));
+    nodes.forEach(id => {
+      const dd = Math.sqrt(disp[id].x ** 2 + disp[id].y ** 2) + 0.01;
+      pos[id].x += (disp[id].x / dd) * Math.min(dd, temp);
+      pos[id].y += (disp[id].y / dd) * Math.min(dd, temp);
+    });
+  }
+  nodes.forEach(id => {
+    g.setNodeAttribute(id, 'x', pos[id].x);
+    g.setNodeAttribute(id, 'y', pos[id].y);
+  });
+}
+
+async function initGraph() {
+  const container = document.getElementById('graph-container');
+  const data = await loadGraph();
+
+  graphInstance = buildSigmaGraph(data);
+  applyLayout(graphInstance);
+
+  if (sigmaInstance) sigmaInstance.kill();
+
+  sigmaInstance = new Sigma(graphInstance, container, {
+    defaultNodeColor: '#8b949e',
+    defaultEdgeColor: 'rgba(139,148,158,0.2)',
+    renderEdgeLabels: false,
+    labelFont: 'sans-serif',
+    labelSize: 11,
+    labelColor: { color: '#c9d1d9' },
+    nodeReducer: (node, data) => ({
+      ...data,
+      highlighted: node === selectedNodeId,
+      borderColor: node === selectedNodeId ? '#f0f6fc' : undefined,
+      size: node === selectedNodeId ? 14 : 10,
+    }),
+  });
+
+  sigmaInstance.on('clickNode', ({ node }) => {
+    selectedNodeId = node;
+    const attrs = graphInstance.getNodeAttributes(node);
+    openDetail(node, attrs);
+    sigmaInstance.refresh();
+  });
+
+  sigmaInstance.on('clickStage', () => {
+    selectedNodeId = null;
+    closeDetail();
+    sigmaInstance.refresh();
+  });
+
+  updateStats(data);
+}
+
+function updateStats(data) {
+  const el = document.getElementById('stats');
+  el.textContent = `${data.nodes.length} nodes · ${data.edges.length} edges`;
+}
+
+async function openDetail(nodeId, attrs) {
+  const res = await fetch(`/api/memories/${nodeId}`);
+  if (!res.ok) return;
+  const m = await res.json();
+
+  document.getElementById('empty-state').style.display = 'none';
+  const detail = document.getElementById('node-detail');
+  detail.style.display = 'flex';
+
+  const badge = document.getElementById('detail-badge');
+  badge.textContent = m.type;
+  badge.className = `badge badge-${m.type}`;
+
+  document.getElementById('detail-scope').textContent = m.scope;
+  document.getElementById('detail-content').value = m.content;
+  document.getElementById('detail-updated').textContent = m.updated_at;
+
+  const srcRow = document.getElementById('detail-source-row');
+  if (m.source) {
+    srcRow.style.display = 'block';
+    document.getElementById('detail-source').textContent = m.source;
+  } else {
+    srcRow.style.display = 'none';
+  }
+
+  detail.dataset.nodeId = nodeId;
+}
+
+function closeDetail() {
+  document.getElementById('empty-state').style.display = 'block';
+  document.getElementById('node-detail').style.display = 'none';
+}
+
+async function saveMemory() {
+  const detail = document.getElementById('node-detail');
+  const nodeId = detail.dataset.nodeId;
+  const content = document.getElementById('detail-content').value.trim();
+  if (!content) return;
+
+  const res = await fetch(`/api/memories/${nodeId}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ content }),
+  });
+
+  if (res.ok) {
+    graphInstance.setNodeAttribute(nodeId, 'fullLabel', content);
+    const shortLabel = content.length > 40 ? content.slice(0, 40) + '…' : content;
+    graphInstance.setNodeAttribute(nodeId, 'label', shortLabel);
+    sigmaInstance.refresh();
+  }
+}
+
+async function deleteMemory() {
+  const detail = document.getElementById('node-detail');
+  const nodeId = detail.dataset.nodeId;
+  if (!confirm('Delete this memory?')) return;
+
+  const res = await fetch(`/api/memories/${nodeId}`, { method: 'DELETE' });
+  if (res.ok) {
+    graphInstance.dropNode(nodeId);
+    sigmaInstance.refresh();
+    closeDetail();
+    selectedNodeId = null;
+  }
+}
+
+async function reloadGraph() {
+  await initGraph();
+}
+
+function resetLayout() {
+  if (!graphInstance) return;
+  graphInstance.nodes().forEach(n => {
+    graphInstance.setNodeAttribute(n, 'x', Math.random() * 100);
+    graphInstance.setNodeAttribute(n, 'y', Math.random() * 100);
+  });
+  applyLayout(graphInstance);
+  sigmaInstance.refresh();
+}
+
+function toggleSidebar() {
+  document.getElementById('sidebar').classList.toggle('hidden');
+}
+
+initGraph();
+</script>
+</body>
+</html>
