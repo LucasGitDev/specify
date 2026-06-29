@@ -104,6 +104,55 @@ specify memory search "autenticação"
 
 Usa [fastembed](https://github.com/qdrant/fastembed) localmente (ONNX, ~90MB, sem API key).
 
+### Ciclo fechado: geração e consumo
+
+Memórias são criadas nos pontos certos do ciclo SDD — e cada busca é registrada:
+
+| Fase | Gatilho |
+|------|---------|
+| `specify.new` | `memory search` ao criar spec — memórias viram restrições |
+| `specify.plan` | `memory search` ao planejar — contexto incorporado no ciclo |
+| `specify.sdd` pós-GREEN | prompt: decisão técnica não óbvia → `memory set` |
+| `specify.review` | prompt: constraint descoberta → `memory set` |
+| `specify.close` | `memory search` pré-close — verifica se ficou algo para trás |
+
+Para ver se as memórias estão sendo **consumidas** (não apenas criadas):
+
+```bash
+specify memory stats
+# memórias salvas : 24
+# buscas totais   : 18
+# buscas sem resultado: 2
+#
+# buscas por origem:
+#   specify.plan     10
+#   specify.new       6
+#   specify.close     2
+```
+
+### Harvest retroativo
+
+Se um projeto já tem artefatos SDD (spec.md, plan.md, result.md) mas as memórias ainda não foram criadas:
+
+```bash
+specify memory harvest --task <slug>   # extrai candidatos de uma task
+specify memory harvest --all            # varre todas as tasks
+specify memory harvest --dry-run        # visualiza sem salvar
+```
+
+O harvest faz extração por padrões (decisões, padrões, restrições) e exibe cada candidato para classificação interativa.
+
+## Studio
+
+Visualização do grafo de conhecimento do projeto:
+
+```bash
+specify studio
+# abre http://127.0.0.1:7842
+```
+
+Cada nó é uma memória. Arestas conectam memórias com similaridade semântica (coseno > 0,7). O botão **Stats** exibe métricas de uso de memória — buscas por origem, queries frequentes, buscas sem resultado.
+
 ---
 
 **Próximo passo:** [instalação e primeiro uso](../README.md#instalação).

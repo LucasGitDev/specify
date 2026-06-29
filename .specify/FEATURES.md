@@ -10,16 +10,26 @@ Tracking de features existentes, planejadas e descartadas.
 - `specify init` — inicializa `.specify/` com DB, INDEX.md, gitignore
 - `specify task create/list/update/close/worktree-info` — gerenciamento de tasks
 - `specify gate run/record/history/last` — execução e registro de gates de validação
-- `specify memory set/get/list/search/delete` — memória persistente com busca vetorial
+- `specify memory set/get/list/search/delete/stats` — memória persistente com busca vetorial e métricas de uso
+- `specify memory harvest` — extração retroativa de memórias de artefatos de tasks (spec.md, plan.md, result.md)
+- `specify studio` — servidor local (FastAPI + uvicorn) com visualização de grafo de memórias
 
 ### Plugin Claude Code
 - Hook `SessionStart` — injeta contexto do projeto (INDEX.md + tasks + memórias) automaticamente
 - Skills: `specify.init`, `specify.new`, `specify.plan`, `specify.sdd`, `specify.review`, `specify.close`, `specify.memory`
+- Prompts de memória em gatilhos obrigatórios: pós-GREEN (sdd), pré-gate (review), pré-close, ao criar spec (new)
 
 ### Persistência
-- SQLite com schema versionado (PRAGMA user_version, 3 migrações)
+- SQLite com schema versionado (PRAGMA user_version, 4 migrações)
 - sqlite-vec + fastembed ONNX (bge-small-en-v1.5, 384 dims) para busca semântica
 - Fallback para busca por substring quando fastembed indisponível
+- Tabela `memory_searches` — log de cada busca (query, results_count, source, timestamp)
+
+### Studio
+- Grafo interativo com Sigma.js 2.4.0 + Graphology (UMD via CDN)
+- Nós = memórias; arestas = similaridade coseno > 0,7; layout force-directed inline (sem deps externas)
+- Sidebar: edição e deleção de memórias via PUT/DELETE `/api/memories/{id}`
+- Painel Stats: buscas por origem, queries frequentes, buscas sem resultado
 
 ### Worktrees
 - `specify task create --worktree` — cria branch `specify/<slug>` em `.claude/worktrees/<slug>/`
@@ -36,7 +46,7 @@ Tracking de features existentes, planejadas e descartadas.
 - `install.sh` — instala uv, venv, symlinks, gitignore global
 - `dev/symlink.sh` — dev mode: skill symlinks + hook em settings.json
 - `Taskfile.yml` — task runner (test, test:e2e, lint, dev:install)
-- 79 testes (67 unit + 12 e2e)
+- 108 testes unitários + 12 e2e
 
 ---
 

@@ -129,6 +129,46 @@ Com a spec pronta:
 | `/specify.close` | Gate final, result.md, commit, MR |
 | `/specify.memory` | Salvar e buscar decisões e padrões do projeto |
 
+## Studio
+
+Visualização interativa das memórias do projeto como grafo de conhecimento:
+
+```bash
+specify studio
+# abre http://127.0.0.1:7842 no browser
+```
+
+Cada nó é uma memória. Arestas conectam memórias semanticamente similares (similaridade coseno > 0,7 sobre embeddings bge-small-en-v1.5). O layout é force-directed, calculado no browser.
+
+**Funcionalidades:**
+- Clique num nó para ver e editar o conteúdo no painel lateral
+- Botão **Stats** exibe métricas de uso: buscas por origem, queries frequentes, buscas sem resultado
+- Botão **Reload** recarrega o grafo sem reiniciar o servidor
+- Salvar ou deletar memórias diretamente pelo painel
+
+Requer `fastapi` e `uvicorn` (instalados automaticamente com `install.sh`).
+
+## Memória — ciclo fechado
+
+O specify garante que memórias sejam criadas **e** consumidas ao longo do ciclo:
+
+| Momento | O que acontece |
+|---------|----------------|
+| `/specify.new` | `memory search` — memórias encontradas viram restrições na spec |
+| `/specify.plan` | `memory search` — contexto relevante incorporado no plano |
+| `/specify.sdd` pós-GREEN | prompt: decisão não óbvia surgiu? → `memory set` |
+| `/specify.review` | prompt: constraint descoberta? → `memory set` |
+| `/specify.close` | `memory search` pré-close + prompt se poucas memórias relacionadas |
+
+Para auditar o consumo:
+
+```bash
+specify memory stats
+# buscas totais, por origem, queries frequentes, buscas sem resultado
+```
+
+Ou abra o studio e clique em **Stats**.
+
 ## CLI
 
 ```bash
@@ -146,8 +186,14 @@ specify gate history --task <slug>
 # Memória
 specify memory set --type decision --content "<decisão>"
 specify memory set --type pattern  --content "<padrão>"
-specify memory search "<query>"
+specify memory search "<query>" [--source <origem>]
 specify memory list --type decision
+specify memory stats          # métricas de uso: criações e buscas
+
+# Studio
+specify studio                # abre visualização no browser (porta 7842)
+specify studio --port 9000    # porta alternativa
+specify studio --no-browser   # só sobe o servidor
 ```
 
 ## Estrutura `.specify/`
@@ -182,6 +228,8 @@ cp ~/projects/specify/templates/worktreeinclude ./.worktreeinclude
 ## Memória semântica
 
 O specify usa [fastembed](https://github.com/qdrant/fastembed) (`BAAI/bge-small-en-v1.5`, ONNX, ~90MB local) para busca semântica nas memórias. Sem API key, sem GPU. Se fastembed não estiver disponível, cai para substring silenciosamente.
+
+O studio usa os mesmos embeddings para calcular similaridade coseno entre memórias e gerar as arestas do grafo.
 
 ## Contribuindo
 
