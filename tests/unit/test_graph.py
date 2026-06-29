@@ -149,7 +149,7 @@ def test_build_graph_edges_are_deduplicated(conn):
 
 
 def test_build_graph_node_type_preserved(conn):
-    mid = insert(conn, type="constraint", content="no external deps")
+    insert(conn, type="constraint", content="no external deps")
     graph = build_graph(conn, embeddings={})
     assert graph["nodes"][0]["type"] == "constraint"
 
