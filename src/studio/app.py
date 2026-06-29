@@ -19,13 +19,19 @@ app = FastAPI(title="specify studio", docs_url=None, redoc_url=None)
 
 
 def _load_embeddings(conn) -> dict[int, list[float]]:
-    rows = conn.execute("SELECT memory_id, embedding FROM vec_memories").fetchall()
     import json
+    import struct
 
+    rows = conn.execute("SELECT memory_id, embedding FROM vec_memories").fetchall()
     result = {}
     for row in rows:
+        raw = row[1]
         try:
-            result[row[0]] = json.loads(row[1])
+            if isinstance(raw, bytes):
+                n = len(raw) // 4
+                result[row[0]] = list(struct.unpack(f"{n}f", raw))
+            else:
+                result[row[0]] = json.loads(raw)
         except Exception:
             pass
     return result
