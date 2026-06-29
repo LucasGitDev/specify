@@ -7,6 +7,7 @@ import click
 from src.core.logger import get_logger
 from src.core.project import get_project_paths
 from src.db import memory as mem_db
+from src.db import searches as search_db
 from src.db import vectors as vec_db
 from src.db.connection import get_connection
 from src.db.schema import migrate
@@ -113,8 +114,9 @@ def cmd_list(scope: str | None, mem_type: str | None, as_json: bool) -> None:
 @cmd_memory.command("search")
 @click.argument("query")
 @click.option("--limit", default=5, show_default=True)
+@click.option("--source", default=None, help="Origem da busca (ex: specify.plan, specify.new)")
 @click.option("--json", "as_json", is_flag=True)
-def cmd_search(query: str, limit: int, as_json: bool) -> None:
+def cmd_search(query: str, limit: int, source: str | None, as_json: bool) -> None:
     """Busca memórias por similaridade semântica (ou substring como fallback)."""
     conn = _get_conn()
     provider = get_provider(warn=False)
@@ -131,6 +133,7 @@ def cmd_search(query: str, limit: int, as_json: bool) -> None:
         click.echo("aviso: busca vetorial indisponível, usando substring", err=True)
         memories = mem_db.search_substring(conn, query, limit=limit)
 
+    search_db.log_search(conn, query=query, results_count=len(memories), source=source)
     conn.close()
     get_logger().debug("memory search: query=%r results=%d", query, len(memories))
     if not memories:
@@ -146,6 +149,43 @@ def cmd_search(query: str, limit: int, as_json: bool) -> None:
     else:
         for m in memories:
             click.echo(_format_memory(m))
+
+
+@cmd_memory.command("stats")
+@click.option("--json", "as_json", is_flag=True)
+def cmd_stats(as_json: bool) -> None:
+    """Exibe estatísticas de uso de memórias (criações e buscas)."""
+    conn = _get_conn()
+    data = search_db.stats(conn)
+    total_memories = len(mem_db.list_all(conn))
+    conn.close()
+
+    data["total_memories"] = total_memories
+
+    if as_json:
+        click.echo(_json.dumps(data, indent=2))
+        return
+
+    click.echo(f"memórias salvas : {total_memories}")
+    click.echo(f"buscas totais   : {data['total_searches']}")
+    click.echo(f"buscas sem resultado: {data['zero_result_searches']}")
+
+    if data["by_source"]:
+        click.echo("\nbuscas por origem:")
+        for row in data["by_source"]:
+            src = row["source"] or "(sem source)"
+            click.echo(f"  {src:<30} {row['count']}")
+
+    if data["top_queries"]:
+        click.echo("\nqueries mais frequentes:")
+        for row in data["top_queries"]:
+            click.echo(f"  [{row['count']}x] {row['query']}")
+
+    if data["recent"]:
+        click.echo("\núltimas buscas:")
+        for row in data["recent"]:
+            src = f" [{row['source']}]" if row["source"] else ""
+            click.echo(f"  {row['searched_at']}{src} → {row['results_count']} resultado(s): {row['query']}")
 
 
 @cmd_memory.command("delete")

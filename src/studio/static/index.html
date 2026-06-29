@@ -165,6 +165,68 @@
       color: #8b949e;
       z-index: 10;
     }
+
+    #stats-panel {
+      position: absolute;
+      top: 48px;
+      left: 12px;
+      width: 320px;
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 8px;
+      padding: 16px;
+      z-index: 20;
+      display: none;
+      flex-direction: column;
+      gap: 12px;
+      max-height: calc(100vh - 80px);
+      overflow-y: auto;
+    }
+
+    #stats-panel.visible { display: flex; }
+
+    #stats-panel h3 {
+      font-size: 12px;
+      font-weight: 600;
+      color: #e6edf3;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      border-bottom: 1px solid #30363d;
+      padding-bottom: 8px;
+    }
+
+    .stat-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+      color: #8b949e;
+    }
+
+    .stat-row span:last-child {
+      color: #c9d1d9;
+      font-weight: 600;
+    }
+
+    .stat-section-title {
+      font-size: 11px;
+      color: #58a6ff;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-top: 4px;
+    }
+
+    .stat-zero { color: #f97583 !important; }
+
+    .search-item {
+      font-size: 11px;
+      color: #8b949e;
+      padding: 4px 0;
+      border-bottom: 1px solid #21262d;
+      line-height: 1.4;
+    }
+
+    .search-item .query { color: #c9d1d9; word-break: break-all; }
+    .search-item .meta { font-size: 10px; color: #6e7681; }
   </style>
 </head>
 <body>
@@ -173,7 +235,13 @@
   <div id="toolbar">
     <button onclick="reloadGraph()">Reload</button>
     <button onclick="toggleSidebar()">Panel</button>
+    <button onclick="toggleStats()">Stats</button>
     <button onclick="resetLayout()">Reset layout</button>
+  </div>
+
+  <div id="stats-panel">
+    <h3>Usage stats</h3>
+    <div id="stats-content"></div>
   </div>
   <div class="legend">
     <div class="legend-item"><span class="legend-dot" style="background:#79c0ff"></span>decision</div>
@@ -444,6 +512,60 @@ function resetLayout() {
 
 function toggleSidebar() {
   document.getElementById('sidebar').classList.toggle('hidden');
+}
+
+async function toggleStats() {
+  const panel = document.getElementById('stats-panel');
+  if (panel.classList.contains('visible')) {
+    panel.classList.remove('visible');
+    return;
+  }
+  const res = await fetch('/api/stats');
+  const d = await res.json();
+  renderStats(d);
+  panel.classList.add('visible');
+}
+
+function renderStats(d) {
+  const el = document.getElementById('stats-content');
+  const zeroClass = d.zero_result_searches > 0 ? ' stat-zero' : '';
+  let html = `
+    <div class="stat-row"><span>Memórias salvas</span><span>${d.total_memories}</span></div>
+    <div class="stat-row"><span>Buscas totais</span><span>${d.total_searches}</span></div>
+    <div class="stat-row"><span>Buscas sem resultado</span><span class="${zeroClass}">${d.zero_result_searches}</span></div>
+  `;
+
+  if (d.by_source && d.by_source.length) {
+    html += `<div class="stat-section-title">Por origem</div>`;
+    d.by_source.forEach(r => {
+      html += `<div class="stat-row"><span>${r.source || '(sem source)'}</span><span>${r.count}</span></div>`;
+    });
+  }
+
+  if (d.top_queries && d.top_queries.length) {
+    html += `<div class="stat-section-title">Queries frequentes</div>`;
+    d.top_queries.forEach(r => {
+      html += `<div class="stat-row"><span>${escapeHtml(r.query)}</span><span>${r.count}x</span></div>`;
+    });
+  }
+
+  if (d.recent && d.recent.length) {
+    html += `<div class="stat-section-title">Últimas buscas</div>`;
+    d.recent.forEach(r => {
+      const src = r.source ? ` · ${r.source}` : '';
+      const dt = r.searched_at ? r.searched_at.slice(0, 16) : '';
+      html += `<div class="search-item">
+        <div class="query">${escapeHtml(r.query)}</div>
+        <div class="meta">${dt}${src} · ${r.results_count} resultado(s)</div>
+      </div>`;
+    });
+  }
+
+  el.innerHTML = html;
+}
+
+function escapeHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 
 initGraph();

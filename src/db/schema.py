@@ -56,13 +56,24 @@ ALTER TABLE tasks ADD COLUMN worktree_path TEXT;
 ALTER TABLE tasks ADD COLUMN worktree_branch TEXT;
 """
 
+_MIGRATION_4 = """
+CREATE TABLE IF NOT EXISTS memory_searches (
+    id           INTEGER PRIMARY KEY,
+    query        TEXT NOT NULL,
+    results_count INTEGER NOT NULL DEFAULT 0,
+    source       TEXT,
+    searched_at  TEXT NOT NULL DEFAULT (datetime('now'))
+);
+"""
+
 MIGRATIONS: dict[int, str] = {
     1: _MIGRATION_1,
     2: _MIGRATION_2,
     3: _MIGRATION_3,
+    4: _MIGRATION_4,
 }
 
-CURRENT_VERSION = 3
+CURRENT_VERSION = 4
 
 
 def migrate(conn) -> None:

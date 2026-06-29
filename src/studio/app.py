@@ -7,6 +7,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from src.db import memory as mem_db
+from src.db import searches as search_db
 from src.db import vectors as vec_db
 from src.db.connection import get_connection
 from src.db.schema import migrate
@@ -108,6 +109,17 @@ def delete_memory(memory_id: int):
         vec_db.delete_embedding(conn, memory_id)
         mem_db.delete(conn, memory_id)
         return {"ok": True}
+    finally:
+        conn.close()
+
+
+@app.get("/api/stats")
+def get_stats():
+    conn = _get_conn()
+    try:
+        data = search_db.stats(conn)
+        data["total_memories"] = len(mem_db.list_all(conn))
+        return data
     finally:
         conn.close()
 
