@@ -16,25 +16,30 @@ Não pular etapas. Se spec já existe, começar pelo `/specify.plan`.
 
 ## Memória — usar proativamente
 
-Antes de implementar algo não trivial:
+**Quando buscar:**
+- Antes de qualquer implementação não trivial — `specify memory search "<domínio>"`
+- Antes de propor uma abordagem — verificar se já foi decidido antes
+- Resultado da busca encontrado → incorporar na spec/plano sem perguntar ao usuário o que ele já decidiu
+
+**Quando persistir** (sem esperar o usuário pedir):
 ```bash
-specify memory search "<domínio do que vai implementar>"
+# Decisão técnica tomada em conversa ou implementação
+specify memory set --type decision --content "<decisão>" --source "<slug>/sdd"
+
+# Padrão descoberto ou confirmado no codebase
+specify memory set --type pattern --content "<padrão>" --source "<slug>/sdd"
+
+# Restrição encontrada que não está documentada
+specify memory set --type constraint --content "<restrição>" --source "<slug>/sdd"
 ```
 
-Após qualquer decisão arquitetural tomada em conversa:
-```bash
-specify memory set --type decision --content "<decisão>"
-```
+**Gatilhos obrigatórios no ciclo:**
+- Pós-GREEN: uma decisão de implementação não óbvia → `memory set`
+- Pós-review: constraint descoberta → `memory set`
+- Pré-close: `memory search` para checar se ficou algo para trás
+- Fora do ciclo: qualquer decisão tomada em conversa que afeta futuras tasks → `memory set` imediatamente
 
-Ao descobrir padrão no codebase:
-```bash
-specify memory set --type pattern --content "<padrão>"
-```
-
-Ao encontrar restrição não documentada:
-```bash
-specify memory set --type constraint --content "<restrição>"
-```
+**O que NÃO persistir:** informação que já está na spec, no INDEX.md, ou que é óbvia da stack.
 
 ## Regras de gate
 

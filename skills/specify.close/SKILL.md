@@ -92,6 +92,23 @@ RESULT
 )"
 ```
 
+## Fase 1.5 — Prompt de memória final
+
+Antes de fechar, verificar se ficou algo para trás:
+```bash
+specify memory search "<slug> <palavras-chave da spec>"
+```
+
+Se a busca retornar menos de 2 resultados relacionados à task — ou nenhum — perguntar:
+> "Esta task gerou decisões, padrões ou constraints que ainda não estão na memória do projeto?"
+
+Para cada item relevante:
+```bash
+specify memory set --type <decision|pattern|constraint> --content "<item>" --source "<slug>/result"
+```
+
+Não forçar se não houver nada novo. O objetivo é garantir que nada importante foi perdido.
+
 ## Fase 2 — Fechar task
 
 ```bash

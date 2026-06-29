@@ -131,6 +131,15 @@ REVIEW
 ```
 
 Se aprovado (zero críticos):
+
+**Prompt de memória** — antes de registrar o gate, perguntar:
+> "O review revelou algum padrão, constraint ou decisão que vale persistir na memória do projeto?"
+
+Para cada item não-óbvio (constraint descoberta, padrão confirmado, decisão de não-fazer):
+```bash
+specify memory set --type <decision|pattern|constraint> --content "<item>" --source "<slug>/review"
+```
+
 ```bash
 specify gate record --task <slug> --phase review --type adversarial --status pass \
   --output "0 críticos, <N> importantes resolvidos, <M> sugestões"

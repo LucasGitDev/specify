@@ -49,6 +49,8 @@ Usar o contexto para:
 - Identificar decisões anteriores que impactam esta task
 - Detectar tasks em andamento que possam conflitar
 
+Se memórias relevantes forem encontradas, incorporá-las diretamente nas **Restrições** da spec — não perguntar ao usuário o que ele já decidiu antes.
+
 ## Fase 3 — Entrevistar (perguntas uma por vez)
 
 Fazer as perguntas necessárias para escrever uma spec completa. **Uma pergunta por vez.** Parar quando tiver informação suficiente para cobrir:

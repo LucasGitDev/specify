@@ -109,6 +109,15 @@ feat(<scope>): <o que foi implementado em termos de comportamento>
 - Incluir apenas arquivos de produção (não testes): `git add <arquivos src>`
 - Mensagem em inglês, imperativo, sem ponto final, uma linha
 
+→ **Prompt de memória** — antes de avançar para REFACTOR, perguntar:
+> "Alguma decisão técnica ou padrão surgiu nesta implementação que vale registrar?"
+
+Para cada resposta não-trivial (não registrar o óbvio — só o que não está na spec nem no INDEX.md):
+```bash
+specify memory set --type <decision|pattern|constraint> --content "<decisão>" --source "<slug>/sdd"
+```
+Se nada surgiu, prosseguir sem forçar.
+
 → Avançar para REFACTOR.
 
 Se algum falhar e `iter < 3`: corrigir implementação e repetir. Não commitar iterações com falha.
