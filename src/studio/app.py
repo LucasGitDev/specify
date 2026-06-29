@@ -35,7 +35,7 @@ def _get_conn():
     from src.core.project import get_project_paths
 
     paths = get_project_paths()
-    conn = get_connection(paths.db_path)
+    conn = get_connection(paths.db_path, check_same_thread=False)
     migrate(conn)
     return conn
 

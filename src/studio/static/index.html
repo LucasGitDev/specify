@@ -5,8 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>specify studio</title>
   <script src="https://cdn.jsdelivr.net/npm/graphology@0.25.4/dist/graphology.umd.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/sigma@3.0.0/build/sigma.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/graphology-layout-forceatlas2@0.10.1/dist/graphology-layout-forceatlas2.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sigma@2.4.0/build/sigma.min.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -265,17 +264,56 @@ function buildSigmaGraph(data) {
 
 function applyLayout(g) {
   if (g.order === 0) return;
-  try {
-    graphologyLayoutForceAtlas2.assign(g, {
-      iterations: 150,
-      settings: {
-        gravity: 1,
-        scalingRatio: 4,
-        adjustSizes: true,
-        barnesHutOptimize: g.order > 100,
-      },
+  // Simple force-directed layout: repulsion + edge attraction, no external dep.
+  const nodes = g.nodes();
+  const N = nodes.length;
+  const pos = {};
+  nodes.forEach((id, i) => {
+    const a = (2 * Math.PI * i) / N;
+    pos[id] = { x: Math.cos(a) * 50, y: Math.sin(a) * 50 };
+  });
+  for (let iter = 0; iter < 120; iter++) {
+    const disp = {};
+    nodes.forEach(id => { disp[id] = { x: 0, y: 0 }; });
+    // repulsion
+    for (let i = 0; i < N; i++) {
+      for (let j = i + 1; j < N; j++) {
+        const a = nodes[i], b = nodes[j];
+        const dx = pos[a].x - pos[b].x;
+        const dy = pos[a].y - pos[b].y;
+        const d2 = dx * dx + dy * dy + 0.01;
+        const f = 400 / d2;
+        disp[a].x += dx * f; disp[a].y += dy * f;
+        disp[b].x -= dx * f; disp[b].y -= dy * f;
+      }
+    }
+    // attraction
+    g.edges().forEach(e => {
+      const s = g.source(e), t = g.target(e);
+      const dx = pos[s].x - pos[t].x;
+      const dy = pos[s].y - pos[t].y;
+      const d = Math.sqrt(dx * dx + dy * dy) + 0.01;
+      const f = d / 10;
+      disp[s].x -= dx * f; disp[s].y -= dy * f;
+      disp[t].x += dx * f; disp[t].y += dy * f;
     });
-  } catch (_) { /* FA2 not critical */ }
+    // gravity toward center
+    nodes.forEach(id => {
+      disp[id].x -= pos[id].x * 0.02;
+      disp[id].y -= pos[id].y * 0.02;
+    });
+    // apply displacement
+    const temp = Math.max(0.5, 5 * (1 - iter / 120));
+    nodes.forEach(id => {
+      const dd = Math.sqrt(disp[id].x ** 2 + disp[id].y ** 2) + 0.01;
+      pos[id].x += (disp[id].x / dd) * Math.min(dd, temp);
+      pos[id].y += (disp[id].y / dd) * Math.min(dd, temp);
+    });
+  }
+  nodes.forEach(id => {
+    g.setNodeAttribute(id, 'x', pos[id].x);
+    g.setNodeAttribute(id, 'y', pos[id].y);
+  });
 }
 
 async function initGraph() {
@@ -291,12 +329,14 @@ async function initGraph() {
     defaultNodeColor: '#8b949e',
     defaultEdgeColor: 'rgba(139,148,158,0.2)',
     renderEdgeLabels: false,
-    labelFont: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+    labelFont: 'sans-serif',
     labelSize: 11,
     labelColor: { color: '#c9d1d9' },
     nodeReducer: (node, data) => ({
       ...data,
       highlighted: node === selectedNodeId,
+      borderColor: node === selectedNodeId ? '#f0f6fc' : undefined,
+      size: node === selectedNodeId ? 14 : 10,
     }),
   });
 
