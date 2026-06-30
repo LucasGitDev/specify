@@ -203,6 +203,32 @@ def test_task_update_logs_status_change(monkeypatch, tmp_path):
     assert "in_progress" in log_content
 
 
+def test_task_close_logs_slug(monkeypatch, tmp_path):
+    log_file = tmp_path / "specify.log"
+    monkeypatch.setenv("SPECIFY_DEBUG", "1")
+    monkeypatch.setenv("SPECIFY_LOG_PATH", str(log_file))
+    _fresh_logger()
+
+    root = _setup_project(tmp_path)
+    monkeypatch.chdir(root)
+
+    from src.db.connection import get_connection
+    from src.db.schema import migrate
+    from src.db import tasks as task_db
+
+    conn = get_connection(root / ".specify" / "specify.db")
+    migrate(conn)
+    task_db.create(conn, slug="close-slug", title="Task To Close")
+    conn.close()
+
+    runner = CliRunner()
+    result = runner.invoke(cli, ["task", "close", "close-slug"])
+    assert result.exit_code == 0
+
+    log_content = log_file.read_text()
+    assert "close-slug" in log_content
+
+
 # ── Critério 5 — memory search loga query + N resultados ──
 
 
