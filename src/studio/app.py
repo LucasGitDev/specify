@@ -16,6 +16,7 @@ from src.embeddings.provider import get_provider
 from src.studio.graph import build_graph
 
 _STATIC_DIR = Path(__file__).parent / "static"
+_SPECIFY_ROOT = Path.cwd()
 
 app = FastAPI(title="specify studio", docs_url=None, redoc_url=None)
 
@@ -122,15 +123,11 @@ def get_task(slug: str):
         if t is None:
             raise HTTPException(status_code=404, detail="not found")
         gates = conn.execute(
-            "SELECT phase, result, recorded_at FROM gates WHERE task_slug = ? ORDER BY recorded_at DESC",
+            "SELECT phase, status, created_at FROM gates WHERE task_slug = ? ORDER BY created_at DESC",
             (slug,),
         ).fetchall()
-        result_path = None
-        import os
-
         candidate = f".specify/tasks/{slug}/result.md"
-        if os.path.exists(candidate):
-            result_path = candidate
+        result_path = candidate if _SPECIFY_ROOT.joinpath(candidate).exists() else None
         return {
             "id": f"t:{t.slug}",
             "slug": t.slug,
@@ -142,8 +139,8 @@ def get_task(slug: str):
             "gates": [
                 {
                     "phase": g["phase"],
-                    "result": g["result"],
-                    "recorded_at": g["recorded_at"],
+                    "result": g["status"],
+                    "recorded_at": g["created_at"],
                 }
                 for g in gates
             ],
