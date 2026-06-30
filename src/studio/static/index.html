@@ -295,6 +295,7 @@
   </div>
 
   <div id="stats"></div>
+  <div id="sigma-container" style="position:absolute;inset:0;z-index:0;"></div>
 </div>
 
 <div id="sidebar">
@@ -458,7 +459,8 @@ function applyLayout(g) {
       const dx = pos[s].x - pos[t].x;
       const dy = pos[s].y - pos[t].y;
       const d = Math.sqrt(dx * dx + dy * dy) + 0.01;
-      const f = d / 10;
+      const kind = g.getEdgeAttribute(e, 'kind');
+      const f = kind === 'scope' ? d / 3 : d / 10;
       disp[s].x -= dx * f; disp[s].y -= dy * f;
       disp[t].x += dx * f; disp[t].y += dy * f;
     });
@@ -480,7 +482,7 @@ function applyLayout(g) {
 }
 
 async function initGraph() {
-  const container = document.getElementById('graph-container');
+  const sigmaContainer = document.getElementById('sigma-container');
   rawData = await loadGraph();
 
   graphInstance = buildSigmaGraph(rawData);
@@ -488,7 +490,7 @@ async function initGraph() {
 
   if (sigmaInstance) sigmaInstance.kill();
 
-  sigmaInstance = new Sigma(graphInstance, container, {
+  sigmaInstance = new Sigma(graphInstance, sigmaContainer, {
     defaultNodeColor: '#8b949e',
     defaultEdgeColor: 'rgba(139,148,158,0.2)',
     renderEdgeLabels: false,
@@ -662,11 +664,11 @@ function toggleFilter(type) {
 
 async function rebuildGraph() {
   if (!rawData) return;
-  const container = document.getElementById('graph-container');
+  const sigmaContainer = document.getElementById('sigma-container');
   graphInstance = buildSigmaGraph(rawData);
   applyLayout(graphInstance);
   if (sigmaInstance) sigmaInstance.kill();
-  sigmaInstance = new Sigma(graphInstance, container, {
+  sigmaInstance = new Sigma(graphInstance, sigmaContainer, {
     defaultNodeColor: '#8b949e',
     defaultEdgeColor: 'rgba(139,148,158,0.2)',
     renderEdgeLabels: false,
