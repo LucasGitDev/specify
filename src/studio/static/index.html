@@ -4,201 +4,151 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>specify studio</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
   <script src="https://cdn.jsdelivr.net/npm/graphology@0.25.4/dist/graphology.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/sigma@2.4.0/build/sigma.min.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+    :root {
+      --bg-canvas:   #0b0f1a;
+      --bg-sidebar:  #0f1520;
+      --bg-surface:  #141c2b;
+      --bg-raised:   #1a2438;
+      --border:      #1e2d45;
+      --border-hi:   #2a3f5f;
+      --text-primary: #d4dce8;
+      --text-secondary: #7a8fa8;
+      --text-muted:  #4d6080;
+      --accent:      #e8a045;
+      --accent-dim:  rgba(232,160,69,0.15);
+
+      --c-decision:   #5b9cf6;
+      --c-pattern:    #4ecb71;
+      --c-constraint: #e05c6a;
+      --c-task:       #b98af5;
+
+      --font-ui:   'Inter', system-ui, sans-serif;
+      --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+    }
+
     body {
       display: flex;
       height: 100vh;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      background: #0d1117;
-      color: #c9d1d9;
+      font-family: var(--font-ui);
+      background: var(--bg-canvas);
+      color: var(--text-primary);
     }
 
+    /* ── Canvas ── */
     #graph-container {
       flex: 1;
       position: relative;
+      background-color: var(--bg-canvas);
+      background-image: radial-gradient(circle, rgba(255,255,255,0.07) 1px, transparent 1px);
+      background-size: 28px 28px;
     }
 
+    #sigma-container {
+      position: absolute;
+      inset: 0;
+      z-index: 0;
+    }
+
+    /* ── Toolbar ── */
     #toolbar {
       position: absolute;
-      top: 12px;
-      left: 12px;
+      top: 14px;
+      left: 14px;
       display: flex;
-      gap: 8px;
+      align-items: center;
+      gap: 6px;
       z-index: 10;
       flex-wrap: wrap;
     }
 
-    .legend {
-      position: absolute;
-      bottom: 16px;
-      left: 16px;
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-      z-index: 10;
-      background: rgba(13,17,23,0.85);
-      border: 1px solid #30363d;
-      border-radius: 8px;
-      padding: 10px 14px;
-    }
-
-    .legend-item {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-size: 12px;
-      color: #8b949e;
-    }
-
-    .legend-dot {
-      width: 10px;
-      height: 10px;
-      border-radius: 50%;
-      flex-shrink: 0;
-    }
-
-    .legend-diamond {
-      width: 10px;
-      height: 10px;
-      transform: rotate(45deg);
+    .toolbar-sep {
+      width: 1px;
+      height: 20px;
+      background: var(--border-hi);
+      margin: 0 4px;
       flex-shrink: 0;
     }
 
     button {
-      background: #21262d;
-      border: 1px solid #30363d;
-      color: #c9d1d9;
-      padding: 6px 12px;
-      border-radius: 6px;
+      background: var(--bg-raised);
+      border: 1px solid var(--border);
+      color: var(--text-secondary);
+      padding: 5px 11px;
+      border-radius: 5px;
       cursor: pointer;
-      font-size: 13px;
-      transition: background 0.15s;
+      font-size: 12px;
+      font-family: var(--font-ui);
+      font-weight: 500;
+      transition: border-color 0.12s, color 0.12s, background 0.12s;
+      display: flex;
+      align-items: center;
+      gap: 6px;
     }
 
-    button:hover { background: #30363d; }
+    button:hover {
+      border-color: var(--border-hi);
+      color: var(--text-primary);
+    }
 
     button.active {
-      background: #388bfd22;
-      border-color: #388bfd;
-      color: #79c0ff;
+      background: var(--accent-dim);
+      border-color: var(--accent);
+      color: var(--accent);
     }
 
-    #sidebar {
-      width: 340px;
-      background: #161b22;
-      border-left: 1px solid #30363d;
-      display: flex;
-      flex-direction: column;
-      padding: 20px;
-      gap: 16px;
-      overflow-y: auto;
-      transition: width 0.2s;
+    button.active .filter-dot {
+      opacity: 1;
     }
 
-    #sidebar.hidden { width: 0; padding: 0; overflow: hidden; }
-
-    #sidebar h2 {
-      font-size: 14px;
-      font-weight: 600;
-      color: #e6edf3;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
+    .filter-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      opacity: 0.45;
+      transition: opacity 0.12s;
     }
 
-    .field-label {
-      font-size: 11px;
-      color: #8b949e;
-      margin-bottom: 4px;
-      text-transform: uppercase;
-      letter-spacing: 0.04em;
-    }
+    #filter-decision  .filter-dot { background: var(--c-decision); }
+    #filter-pattern   .filter-dot { background: var(--c-pattern); }
+    #filter-constraint .filter-dot { background: var(--c-constraint); }
+    #filter-task      .filter-dot { background: var(--c-task); }
 
-    .badge {
-      display: inline-block;
-      padding: 2px 8px;
-      border-radius: 12px;
-      font-size: 11px;
-      font-weight: 600;
-    }
+    #filter-decision.active  { background: rgba(91,156,246,0.1); border-color: var(--c-decision); color: var(--c-decision); }
+    #filter-pattern.active   { background: rgba(78,203,113,0.1); border-color: var(--c-pattern);  color: var(--c-pattern); }
+    #filter-constraint.active{ background: rgba(224,92,106,0.1); border-color: var(--c-constraint);color: var(--c-constraint); }
+    #filter-task.active      { background: rgba(185,138,245,0.1); border-color: var(--c-task);    color: var(--c-task); }
 
-    .badge-decision   { background: #1f3a5f; color: #79c0ff; }
-    .badge-pattern    { background: #1a3a2a; color: #56d364; }
-    .badge-constraint { background: #3d1e1e; color: #f97583; }
-    .badge-task       { background: #2d1b69; color: #d2a8ff; }
+    #filter-decision.active  .filter-dot { opacity: 1; }
+    #filter-pattern.active   .filter-dot { opacity: 1; }
+    #filter-constraint.active .filter-dot { opacity: 1; }
+    #filter-task.active      .filter-dot { opacity: 1; }
 
-    .badge-status-planned    { background: #21262d; color: #8b949e; }
-    .badge-status-in_progress{ background: #1f3a5f; color: #79c0ff; }
-    .badge-status-review     { background: #3d2c00; color: #e3b341; }
-    .badge-status-closed     { background: #1a3a2a; color: #56d364; }
+    /* ── Stats overlay (canvas) — removed, moved to sidebar ── */
+    #stats { display: none; }
 
-    textarea {
-      width: 100%;
-      min-height: 120px;
-      background: #0d1117;
-      border: 1px solid #30363d;
-      border-radius: 6px;
-      color: #c9d1d9;
-      font-size: 13px;
-      font-family: inherit;
-      padding: 8px;
-      resize: vertical;
-      line-height: 1.5;
-    }
-
-    textarea:focus { outline: none; border-color: #58a6ff; }
-
-    .btn-save {
-      background: #238636;
-      border-color: #2ea043;
-      color: #fff;
-    }
-    .btn-save:hover { background: #2ea043; }
-
-    .btn-delete {
-      background: transparent;
-      border-color: #f85149;
-      color: #f85149;
-    }
-    .btn-delete:hover { background: #3d1e1e; }
-
-    .meta-row {
-      font-size: 12px;
-      color: #8b949e;
-    }
-
-    #empty-state {
-      color: #8b949e;
-      font-size: 13px;
-      text-align: center;
-      margin-top: 40px;
-    }
-
-    #stats {
-      position: absolute;
-      bottom: 16px;
-      right: 16px;
-      font-size: 11px;
-      color: #8b949e;
-      z-index: 10;
-    }
-
+    /* ── Stats panel ── */
     #stats-panel {
       position: absolute;
-      top: 48px;
-      left: 12px;
-      width: 320px;
-      background: #161b22;
-      border: 1px solid #30363d;
+      top: 50px;
+      left: 14px;
+      width: 300px;
+      background: var(--bg-sidebar);
+      border: 1px solid var(--border-hi);
       border-radius: 8px;
-      padding: 16px;
+      padding: 14px;
       z-index: 20;
       display: none;
       flex-direction: column;
-      gap: 12px;
+      gap: 10px;
       max-height: calc(100vh - 80px);
       overflow-y: auto;
     }
@@ -206,12 +156,12 @@
     #stats-panel.visible { display: flex; }
 
     #stats-panel h3 {
-      font-size: 12px;
+      font-size: 11px;
       font-weight: 600;
-      color: #e6edf3;
+      color: var(--accent);
       text-transform: uppercase;
-      letter-spacing: 0.05em;
-      border-bottom: 1px solid #30363d;
+      letter-spacing: 0.08em;
+      border-bottom: 1px solid var(--border);
       padding-bottom: 8px;
     }
 
@@ -219,53 +169,205 @@
       display: flex;
       justify-content: space-between;
       font-size: 12px;
-      color: #8b949e;
+      color: var(--text-secondary);
     }
 
     .stat-row span:last-child {
-      color: #c9d1d9;
+      color: var(--text-primary);
+      font-family: var(--font-mono);
       font-weight: 600;
     }
 
     .stat-section-title {
-      font-size: 11px;
-      color: #58a6ff;
+      font-size: 10px;
+      color: var(--accent);
       text-transform: uppercase;
-      letter-spacing: 0.04em;
-      margin-top: 4px;
+      letter-spacing: 0.06em;
+      margin-top: 2px;
     }
 
-    .stat-zero { color: #f97583 !important; }
+    .stat-zero { color: var(--c-constraint) !important; }
 
     .search-item {
       font-size: 11px;
-      color: #8b949e;
+      color: var(--text-secondary);
       padding: 4px 0;
-      border-bottom: 1px solid #21262d;
+      border-bottom: 1px solid var(--bg-raised);
       line-height: 1.4;
     }
 
-    .search-item .query { color: #c9d1d9; word-break: break-all; }
-    .search-item .meta { font-size: 10px; color: #6e7681; }
+    .search-item .query { color: var(--text-primary); font-family: var(--font-mono); word-break: break-all; }
+    .search-item .meta  { font-size: 10px; color: var(--text-muted); font-family: var(--font-mono); }
 
     .gate-row {
       display: flex;
       justify-content: space-between;
       font-size: 11px;
       padding: 3px 0;
-      border-bottom: 1px solid #21262d;
-      color: #8b949e;
+      border-bottom: 1px solid var(--bg-raised);
+      color: var(--text-secondary);
     }
 
-    .gate-pass { color: #56d364; }
-    .gate-fail { color: #f97583; }
+    .gate-row span:first-child { font-family: var(--font-mono); }
+    .gate-pass { color: var(--c-pattern); font-family: var(--font-mono); }
+    .gate-fail { color: var(--c-constraint); font-family: var(--font-mono); }
 
     a.result-link {
-      color: #58a6ff;
+      color: var(--accent);
       font-size: 12px;
+      font-family: var(--font-mono);
       text-decoration: none;
     }
     a.result-link:hover { text-decoration: underline; }
+
+    /* ── Sidebar ── */
+    #sidebar {
+      width: 320px;
+      background: var(--bg-sidebar);
+      border-left: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+      transition: width 0.18s;
+    }
+
+    #sidebar.hidden { width: 0; overflow: hidden; }
+
+    /* Wordmark */
+    #sidebar-header {
+      padding: 16px 18px 12px;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+
+    #wordmark {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-primary);
+      letter-spacing: -0.01em;
+      line-height: 1;
+      margin-bottom: 10px;
+    }
+
+    #wordmark span {
+      color: var(--text-muted);
+      font-weight: 400;
+    }
+
+    /* type stripe */
+    #type-stripe {
+      display: flex;
+      height: 3px;
+      border-radius: 2px;
+      overflow: hidden;
+    }
+
+    #type-stripe div { flex: 1; }
+    #type-stripe .s-decision   { background: var(--c-decision); }
+    #type-stripe .s-pattern    { background: var(--c-pattern); }
+    #type-stripe .s-constraint { background: var(--c-constraint); }
+    #type-stripe .s-task       { background: var(--c-task); }
+
+    /* Sidebar content */
+    #sidebar-content {
+      flex: 1;
+      padding: 16px 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      overflow-y: auto;
+    }
+
+    /* Sidebar footer */
+    #sidebar-footer {
+      padding: 10px 18px;
+      border-top: 1px solid var(--border);
+      font-size: 11px;
+      font-family: var(--font-mono);
+      color: var(--text-muted);
+      flex-shrink: 0;
+    }
+
+    #sidebar h2 {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+    }
+
+    .field-label {
+      font-size: 10px;
+      color: var(--text-muted);
+      margin-bottom: 3px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 2px 7px;
+      border-radius: 3px;
+      font-size: 10px;
+      font-weight: 600;
+      font-family: var(--font-mono);
+      letter-spacing: 0.03em;
+    }
+
+    .badge-decision   { background: rgba(91,156,246,0.12);  color: var(--c-decision); }
+    .badge-pattern    { background: rgba(78,203,113,0.12);  color: var(--c-pattern); }
+    .badge-constraint { background: rgba(224,92,106,0.12);  color: var(--c-constraint); }
+    .badge-task       { background: rgba(185,138,245,0.12); color: var(--c-task); }
+
+    .badge-status-planned     { background: var(--bg-raised); color: var(--text-muted); }
+    .badge-status-in_progress { background: rgba(91,156,246,0.12); color: var(--c-decision); }
+    .badge-status-review      { background: rgba(232,160,69,0.15); color: var(--accent); }
+    .badge-status-closed      { background: rgba(78,203,113,0.12); color: var(--c-pattern); }
+
+    textarea {
+      width: 100%;
+      min-height: 110px;
+      background: var(--bg-canvas);
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      color: var(--text-primary);
+      font-size: 12px;
+      font-family: var(--font-mono);
+      padding: 8px;
+      resize: vertical;
+      line-height: 1.55;
+    }
+
+    textarea:focus { outline: none; border-color: var(--accent); }
+
+    .btn-save {
+      background: rgba(78,203,113,0.12);
+      border-color: var(--c-pattern);
+      color: var(--c-pattern);
+    }
+    .btn-save:hover { background: rgba(78,203,113,0.2); }
+
+    .btn-delete {
+      background: transparent;
+      border-color: var(--c-constraint);
+      color: var(--c-constraint);
+    }
+    .btn-delete:hover { background: rgba(224,92,106,0.1); }
+
+    .meta-row {
+      font-size: 12px;
+      font-family: var(--font-mono);
+      color: var(--text-secondary);
+      word-break: break-all;
+    }
+
+    #empty-state {
+      color: var(--text-muted);
+      font-size: 12px;
+      text-align: center;
+      margin-top: 48px;
+      font-family: var(--font-mono);
+    }
   </style>
 </head>
 <body>
@@ -275,11 +377,22 @@
     <button onclick="reloadGraph()">Reload</button>
     <button onclick="toggleSidebar()">Panel</button>
     <button onclick="toggleStats()">Stats</button>
-    <button onclick="resetLayout()">Reset layout</button>
-    <button id="filter-decision"  class="active" onclick="toggleFilter('decision')">decision</button>
-    <button id="filter-pattern"   class="active" onclick="toggleFilter('pattern')">pattern</button>
-    <button id="filter-constraint"class="active" onclick="toggleFilter('constraint')">constraint</button>
-    <button id="filter-task"      class="active" onclick="toggleFilter('task')">task</button>
+    <button onclick="resetLayout()">Reset</button>
+
+    <div class="toolbar-sep"></div>
+
+    <button id="filter-decision"   class="active" onclick="toggleFilter('decision')">
+      <span class="filter-dot"></span>decision
+    </button>
+    <button id="filter-pattern"    class="active" onclick="toggleFilter('pattern')">
+      <span class="filter-dot"></span>pattern
+    </button>
+    <button id="filter-constraint" class="active" onclick="toggleFilter('constraint')">
+      <span class="filter-dot"></span>constraint
+    </button>
+    <button id="filter-task"       class="active" onclick="toggleFilter('task')">
+      <span class="filter-dot"></span>task
+    </button>
   </div>
 
   <div id="stats-panel">
@@ -287,92 +400,101 @@
     <div id="stats-content"></div>
   </div>
 
-  <div class="legend">
-    <div class="legend-item"><span class="legend-dot" style="background:#79c0ff"></span>decision</div>
-    <div class="legend-item"><span class="legend-dot" style="background:#56d364"></span>pattern</div>
-    <div class="legend-item"><span class="legend-dot" style="background:#f97583"></span>constraint</div>
-    <div class="legend-item"><span class="legend-diamond" style="background:#d2a8ff"></span>task</div>
-  </div>
-
   <div id="stats"></div>
-  <div id="sigma-container" style="position:absolute;inset:0;z-index:0;"></div>
+  <div id="sigma-container"></div>
 </div>
 
 <div id="sidebar">
-  <div id="empty-state">Click a node to inspect</div>
-
-  <!-- Memory detail -->
-  <div id="memory-detail" style="display:none; gap:16px; flex-direction:column;">
-    <div>
-      <div class="field-label">Type</div>
-      <span id="mem-badge" class="badge"></span>
-    </div>
-    <div>
-      <div class="field-label">Scope</div>
-      <span id="mem-scope" class="meta-row"></span>
-    </div>
-    <div id="mem-source-row" style="display:none">
-      <div class="field-label">Source</div>
-      <span id="mem-source" class="meta-row"></span>
-    </div>
-    <div>
-      <div class="field-label">Content</div>
-      <textarea id="mem-content"></textarea>
-    </div>
-    <div style="display:flex; gap:8px;">
-      <button class="btn-save" onclick="saveMemory()">Save</button>
-      <button class="btn-delete" onclick="deleteMemory()">Delete</button>
-    </div>
-    <div>
-      <div class="field-label">Updated</div>
-      <span id="mem-updated" class="meta-row"></span>
+  <div id="sidebar-header">
+    <div id="wordmark">specify <span>/ studio</span></div>
+    <div id="type-stripe">
+      <div class="s-decision"></div>
+      <div class="s-pattern"></div>
+      <div class="s-constraint"></div>
+      <div class="s-task"></div>
     </div>
   </div>
 
-  <!-- Task detail -->
-  <div id="task-detail" style="display:none; gap:16px; flex-direction:column;">
-    <div style="display:flex; align-items:center; gap:8px;">
-      <span class="badge badge-task">task</span>
-      <span id="task-status-badge" class="badge"></span>
+  <div id="sidebar-content">
+    <div id="empty-state">click a node to inspect</div>
+
+    <!-- Memory detail -->
+    <div id="memory-detail" style="display:none; gap:14px; flex-direction:column;">
+      <div>
+        <div class="field-label">Type</div>
+        <span id="mem-badge" class="badge"></span>
+      </div>
+      <div>
+        <div class="field-label">Scope</div>
+        <span id="mem-scope" class="meta-row"></span>
+      </div>
+      <div id="mem-source-row" style="display:none">
+        <div class="field-label">Source</div>
+        <span id="mem-source" class="meta-row"></span>
+      </div>
+      <div>
+        <div class="field-label">Content</div>
+        <textarea id="mem-content"></textarea>
+      </div>
+      <div style="display:flex; gap:8px;">
+        <button class="btn-save" onclick="saveMemory()">Save</button>
+        <button class="btn-delete" onclick="deleteMemory()">Delete</button>
+      </div>
+      <div>
+        <div class="field-label">Updated</div>
+        <span id="mem-updated" class="meta-row"></span>
+      </div>
     </div>
-    <div>
-      <div class="field-label">Title</div>
-      <span id="task-title" class="meta-row" style="color:#e6edf3; font-size:14px;"></span>
+
+    <!-- Task detail -->
+    <div id="task-detail" style="display:none; gap:14px; flex-direction:column;">
+      <div style="display:flex; align-items:center; gap:8px;">
+        <span class="badge badge-task">task</span>
+        <span id="task-status-badge" class="badge"></span>
+      </div>
+      <div>
+        <div class="field-label">Title</div>
+        <span id="task-title" class="meta-row" style="color:var(--text-primary); font-family:var(--font-ui); font-size:13px;"></span>
+      </div>
+      <div>
+        <div class="field-label">Slug</div>
+        <span id="task-slug" class="meta-row"></span>
+      </div>
+      <div id="task-spec-row" style="display:none">
+        <div class="field-label">Spec</div>
+        <span id="task-spec" class="meta-row"></span>
+      </div>
+      <div id="task-gates-section" style="display:none">
+        <div class="field-label">Gates</div>
+        <div id="task-gates"></div>
+      </div>
+      <div id="task-result-row" style="display:none">
+        <div class="field-label">Result</div>
+        <a id="task-result-link" class="result-link" href="#"></a>
+      </div>
+      <div>
+        <div class="field-label">Created</div>
+        <span id="task-created" class="meta-row"></span>
+      </div>
     </div>
-    <div>
-      <div class="field-label">Slug</div>
-      <span id="task-slug" class="meta-row"></span>
-    </div>
-    <div id="task-spec-row" style="display:none">
-      <div class="field-label">Spec</div>
-      <span id="task-spec" class="meta-row"></span>
-    </div>
-    <div id="task-gates-section" style="display:none">
-      <div class="field-label">Gates</div>
-      <div id="task-gates"></div>
-    </div>
-    <div id="task-result-row" style="display:none">
-      <div class="field-label">Result</div>
-      <a id="task-result-link" class="result-link" href="#"></a>
-    </div>
-    <div>
-      <div class="field-label">Created</div>
-      <span id="task-created" class="meta-row"></span>
-    </div>
+  </div>
+
+  <div id="sidebar-footer">
+    <span id="graph-stats">— nodes · — edges</span>
   </div>
 </div>
 
 <script>
 const TYPE_COLORS = {
-  decision:   '#79c0ff',
-  pattern:    '#56d364',
-  constraint: '#f97583',
-  task:       '#d2a8ff',
+  decision:   '#5b9cf6',
+  pattern:    '#4ecb71',
+  constraint: '#e05c6a',
+  task:       '#b98af5',
 };
 
 const EDGE_COLORS = {
-  semantic: 'rgba(139,148,158,0.25)',
-  scope:    'rgba(210,168,255,0.35)',
+  semantic: 'rgba(122,143,168,0.2)',
+  scope:    'rgba(185,138,245,0.3)',
 };
 
 const NODE_SIZES = {
@@ -398,7 +520,7 @@ function buildSigmaGraph(data) {
 
   data.nodes.forEach(n => {
     if (!activeFilters.has(n.type)) return;
-    const color = TYPE_COLORS[n.type] || '#8b949e';
+    const color = TYPE_COLORS[n.type] || '#7a8fa8';
     const size = NODE_SIZES[n.type] || 10;
     const rawLabel = n.label || n.id;
     const shortLabel = rawLabel.length > 40 ? rawLabel.slice(0, 40) + '…' : rawLabel;
@@ -491,16 +613,16 @@ async function initGraph() {
   if (sigmaInstance) sigmaInstance.kill();
 
   sigmaInstance = new Sigma(graphInstance, sigmaContainer, {
-    defaultNodeColor: '#8b949e',
-    defaultEdgeColor: 'rgba(139,148,158,0.2)',
+    defaultNodeColor: '#7a8fa8',
+    defaultEdgeColor: 'rgba(122,143,168,0.15)',
     renderEdgeLabels: false,
-    labelFont: 'sans-serif',
+    labelFont: 'JetBrains Mono',
     labelSize: 11,
-    labelColor: { color: '#c9d1d9' },
+    labelColor: { color: '#7a8fa8' },
     nodeReducer: (node, data) => ({
       ...data,
       highlighted: node === selectedNodeId,
-      borderColor: node === selectedNodeId ? '#f0f6fc' : undefined,
+      borderColor: node === selectedNodeId ? '#e8a045' : undefined,
       size: node === selectedNodeId ? data.size + 4 : data.size,
     }),
   });
@@ -522,7 +644,7 @@ async function initGraph() {
 }
 
 function updateStats(data) {
-  document.getElementById('stats').textContent =
+  document.getElementById('graph-stats').textContent =
     `${data.nodes.length} nodes · ${data.edges.length} edges`;
 }
 
@@ -669,16 +791,16 @@ async function rebuildGraph() {
   applyLayout(graphInstance);
   if (sigmaInstance) sigmaInstance.kill();
   sigmaInstance = new Sigma(graphInstance, sigmaContainer, {
-    defaultNodeColor: '#8b949e',
-    defaultEdgeColor: 'rgba(139,148,158,0.2)',
+    defaultNodeColor: '#7a8fa8',
+    defaultEdgeColor: 'rgba(122,143,168,0.15)',
     renderEdgeLabels: false,
-    labelFont: 'sans-serif',
+    labelFont: 'JetBrains Mono',
     labelSize: 11,
-    labelColor: { color: '#c9d1d9' },
+    labelColor: { color: '#7a8fa8' },
     nodeReducer: (node, data) => ({
       ...data,
       highlighted: node === selectedNodeId,
-      borderColor: node === selectedNodeId ? '#f0f6fc' : undefined,
+      borderColor: node === selectedNodeId ? '#e8a045' : undefined,
       size: node === selectedNodeId ? data.size + 4 : data.size,
     }),
   });
@@ -731,33 +853,33 @@ function renderStats(d) {
   const el = document.getElementById('stats-content');
   const zeroClass = d.zero_result_searches > 0 ? ' stat-zero' : '';
   let html = `
-    <div class="stat-row"><span>Memórias salvas</span><span>${d.total_memories}</span></div>
-    <div class="stat-row"><span>Buscas totais</span><span>${d.total_searches}</span></div>
-    <div class="stat-row"><span>Buscas sem resultado</span><span class="${zeroClass}">${d.zero_result_searches}</span></div>
+    <div class="stat-row"><span>Memories saved</span><span>${d.total_memories}</span></div>
+    <div class="stat-row"><span>Total searches</span><span>${d.total_searches}</span></div>
+    <div class="stat-row"><span>Zero-result searches</span><span class="${zeroClass}">${d.zero_result_searches}</span></div>
   `;
 
   if (d.by_source && d.by_source.length) {
-    html += `<div class="stat-section-title">Por origem</div>`;
+    html += `<div class="stat-section-title">By source</div>`;
     d.by_source.forEach(r => {
-      html += `<div class="stat-row"><span>${r.source || '(sem source)'}</span><span>${r.count}</span></div>`;
+      html += `<div class="stat-row"><span>${r.source || '(no source)'}</span><span>${r.count}</span></div>`;
     });
   }
 
   if (d.top_queries && d.top_queries.length) {
-    html += `<div class="stat-section-title">Queries frequentes</div>`;
+    html += `<div class="stat-section-title">Top queries</div>`;
     d.top_queries.forEach(r => {
       html += `<div class="stat-row"><span>${escapeHtml(r.query)}</span><span>${r.count}x</span></div>`;
     });
   }
 
   if (d.recent && d.recent.length) {
-    html += `<div class="stat-section-title">Últimas buscas</div>`;
+    html += `<div class="stat-section-title">Recent searches</div>`;
     d.recent.forEach(r => {
       const src = r.source ? ` · ${r.source}` : '';
       const dt = r.searched_at ? r.searched_at.slice(0, 16) : '';
       html += `<div class="search-item">
         <div class="query">${escapeHtml(r.query)}</div>
-        <div class="meta">${dt}${src} · ${r.results_count} resultado(s)</div>
+        <div class="meta">${dt}${src} · ${r.results_count} result(s)</div>
       </div>`;
     });
   }
