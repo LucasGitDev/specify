@@ -1,0 +1,36 @@
+# SDD Log: studio-visual-redesign
+
+**Data**: 2026-06-30
+**Estratégia de commits**: automático
+
+## RED
+
+- Checklist de 8 critérios mapeados contra HTML atual
+- Gate: ✓ 8/8 failing confirmado
+- Commit: test(studio): add red checklist — 8 criteria failing pre-redesign
+
+## GREEN
+
+### Todos os critérios (implementados em uma passagem)
+- Paleta: CSS custom properties com --bg-canvas, --bg-sidebar, --accent
+- Dot-grid: background-image radial-gradient SVG no #graph-container
+- Wordmark + type stripe: novo #sidebar-header com #wordmark e #type-stripe
+- Toolbar groups: .toolbar-sep (1px vertical) entre grupo Ação e grupo Filtro
+- Filter dots: .filter-dot span dentro dos filter buttons; .legend removida
+- Tipografia: Google Fonts Inter + JetBrains Mono via CDN
+- Stats sidebar: #graph-stats em #sidebar-footer; #stats no canvas com display:none
+- i18n: renderStats() traduzido para inglês
+- Gate: ✓ 142 testes passando, 0 falhando
+- Commit: feat(studio): redesign visual — paleta petróleo/âmbar, tipografia, toolbar groups, wordmark
+
+## REFACTOR
+
+- lint: ✓ ruff check — sem issues
+- fmt: ✓ ruff format — sem diff
+- testes pós-refactor: ✓ 142 passando
+- Commit: não necessário (sem diff)
+
+## Commits desta fase
+
+test(studio): add red checklist — 8 criteria failing pre-redesign
+feat(studio): redesign visual — paleta petróleo/âmbar, tipografia, toolbar groups, wordmark
