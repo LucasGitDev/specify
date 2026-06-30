@@ -292,6 +292,35 @@ def cmd_delete(memory_id: int) -> None:
     click.echo(f"memória [{memory_id}] removida")
 
 
+@cmd_memory.command("link")
+@click.option("--kind", required=True, help="Tipo do link (ex: not-applicable)")
+@click.option("--memory", "memory_id", required=True, type=int, help="ID da memória")
+@click.option("--task", "task_slug", required=True, help="Slug da task")
+@click.option("--note", default=None, help="Razão obrigatória para o link")
+def cmd_link(kind: str, memory_id: int, task_slug: str, note: str | None) -> None:
+    """Cria um link entre memória e task (ex: not-applicable)."""
+    if note is None or not note.strip():
+        raise click.ClickException("--note é obrigatório para memory link")
+
+    conn = _get_conn()
+    from src.db import links as links_db
+
+    if mem_db.get(conn, memory_id) is None:
+        conn.close()
+        raise click.ClickException(f"memória [{memory_id}] não encontrada")
+
+    try:
+        lid = links_db.insert(
+            conn, memory_id=memory_id, task_slug=task_slug, kind=kind, note=note
+        )
+    except ValueError as e:
+        conn.close()
+        raise click.ClickException(str(e))
+
+    conn.close()
+    click.echo(f"link [{lid}] salvo: [{memory_id}] → {task_slug} ({kind})")
+
+
 # late import to avoid circular
 from src.cli.cmd_harvest import cmd_harvest  # noqa: E402
 

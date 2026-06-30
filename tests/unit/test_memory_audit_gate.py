@@ -1,4 +1,5 @@
 """RED — tests for memory-audit gate phase."""
+
 from __future__ import annotations
 
 import subprocess
@@ -45,6 +46,7 @@ def runner(project, monkeypatch):
 
 def _make_task(conn, slug="my-task", title="fix build failures"):
     from src.db import tasks as task_db
+
     task_db.create(conn, slug=slug, title=title)
 
 
@@ -78,7 +80,10 @@ class TestMemoryAuditGate:
         _insert_constraint(conn, "ALWAYS: run go build", similar=False)
         conn.close()
 
-        with patch("src.cli.cmd_gate.get_provider", return_value=_mock_provider([1.0] + [0.0] * 383)):
+        with patch(
+            "src.cli.cmd_gate.get_provider",
+            return_value=_mock_provider([1.0] + [0.0] * 383),
+        ):
             result = runner.invoke(
                 cmd_gate, ["run", "--task", "my-task", "--phase", "memory-audit"]
             )
@@ -105,7 +110,9 @@ class TestMemoryAuditGate:
         assert "go build" in result.output
         assert "not-applicable" in result.output  # shows remediation command
 
-    def test_memory_audit_fail_output_includes_remediation_command(self, runner, project):
+    def test_memory_audit_fail_output_includes_remediation_command(
+        self, runner, project
+    ):
         db_path = project / ".specify" / "specify.db"
         conn = get_connection(db_path)
         _make_task(conn, "my-task")
@@ -132,7 +139,11 @@ class TestMemoryAuditGate:
 
         # create a file with the constraint terms
         (project / "main.go").write_text("// go build before gating\npackage main\n")
-        subprocess.run(["git", "-C", str(project), "add", "main.go"], check=True, capture_output=True)
+        subprocess.run(
+            ["git", "-C", str(project), "add", "main.go"],
+            check=True,
+            capture_output=True,
+        )
         subprocess.run(
             ["git", "-C", str(project), "commit", "-m", "add main.go"],
             check=True,
@@ -161,10 +172,14 @@ class TestMemoryAuditGate:
                 cmd_memory,
                 [
                     "link",
-                    "--kind", "not-applicable",
-                    "--memory", str(mid),
-                    "--task", "my-task",
-                    "--note", "Python project, no go build needed",
+                    "--kind",
+                    "not-applicable",
+                    "--memory",
+                    str(mid),
+                    "--task",
+                    "my-task",
+                    "--note",
+                    "Python project, no go build needed",
                 ],
             )
 
@@ -210,9 +225,12 @@ class TestMemoryLinkCommand:
                 cmd_memory,
                 [
                     "link",
-                    "--kind", "not-applicable",
-                    "--memory", str(mid),
-                    "--task", "my-task",
+                    "--kind",
+                    "not-applicable",
+                    "--memory",
+                    str(mid),
+                    "--task",
+                    "my-task",
                 ],
             )
 
@@ -232,15 +250,23 @@ class TestMemoryLinkCommand:
                 cmd_memory,
                 [
                     "link",
-                    "--kind", "not-applicable",
-                    "--memory", str(mid),
-                    "--task", "my-task",
-                    "--note", "Python project, not applicable",
+                    "--kind",
+                    "not-applicable",
+                    "--memory",
+                    str(mid),
+                    "--task",
+                    "my-task",
+                    "--note",
+                    "Python project, not applicable",
                 ],
             )
 
         assert result.exit_code == 0
-        assert "link" in result.output.lower() or "salvo" in result.output.lower() or str(mid) in result.output
+        assert (
+            "link" in result.output.lower()
+            or "salvo" in result.output.lower()
+            or str(mid) in result.output
+        )
 
     def test_link_unknown_kind_rejected(self, runner, project):
         db_path = project / ".specify" / "specify.db"
@@ -254,10 +280,14 @@ class TestMemoryLinkCommand:
                 cmd_memory,
                 [
                     "link",
-                    "--kind", "unknown-kind",
-                    "--memory", str(mid),
-                    "--task", "my-task",
-                    "--note", "some note",
+                    "--kind",
+                    "unknown-kind",
+                    "--memory",
+                    str(mid),
+                    "--task",
+                    "my-task",
+                    "--note",
+                    "some note",
                 ],
             )
 
@@ -270,9 +300,13 @@ class TestMemoryLinkCommand:
 class TestGateRunPipeline:
     def _make_run_result(self, gate_type="tests"):
         from src.core.gate_validator import GateResult
+
         return GateResult(
-            passed=True, gate_type=gate_type,
-            command="pytest", output="1 passed", duration_ms=50,
+            passed=True,
+            gate_type=gate_type,
+            command="pytest",
+            output="1 passed",
+            duration_ms=50,
         )
 
     def test_gate_run_without_phase_runs_memory_audit_first(self, runner, project):
@@ -288,9 +322,7 @@ class TestGateRunPipeline:
         ):
             mp.return_value.available.return_value = False
             mock_detect.return_value = MagicMock(language="python")
-            result = runner.invoke(
-                cmd_gate, ["run", "--task", "my-task"]
-            )
+            result = runner.invoke(cmd_gate, ["run", "--task", "my-task"])
 
         assert result.exit_code == 0
         # memory-audit should appear before tests in output
@@ -300,7 +332,7 @@ class TestGateRunPipeline:
         db_path = project / ".specify" / "specify.db"
         conn = get_connection(db_path)
         _make_task(conn, "my-task")
-        mid = _insert_constraint(conn, "ALWAYS: run go build before gating")
+        _insert_constraint(conn, "ALWAYS: run go build before gating")
         conn.close()
 
         with (

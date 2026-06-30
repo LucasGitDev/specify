@@ -66,14 +66,26 @@ CREATE TABLE IF NOT EXISTS memory_searches (
 );
 """
 
+_MIGRATION_5 = """
+CREATE TABLE IF NOT EXISTS memory_links (
+    id         INTEGER PRIMARY KEY,
+    memory_id  INTEGER NOT NULL,
+    task_slug  TEXT NOT NULL,
+    kind       TEXT NOT NULL,
+    note       TEXT NOT NULL,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+"""
+
 MIGRATIONS: dict[int, str] = {
     1: _MIGRATION_1,
     2: _MIGRATION_2,
     3: _MIGRATION_3,
     4: _MIGRATION_4,
+    5: _MIGRATION_5,
 }
 
-CURRENT_VERSION = 4
+CURRENT_VERSION = 5
 
 
 def migrate(conn) -> None:

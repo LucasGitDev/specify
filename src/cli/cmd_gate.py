@@ -10,6 +10,7 @@ from src.core.lang_detector import detect
 from src.core.logger import get_logger
 from src.core.project import get_project_paths
 from src.db import gates as gate_db
+from src.db import links as links_db
 from src.db import memory as mem_db
 from src.db import tasks as task_db
 from src.db import vectors as vec_db
@@ -20,11 +21,13 @@ from src.embeddings.provider import get_provider
 # vec_db.search returns L2 distance — lower is more similar (0.0 = identical)
 _CHECKLIST_DISTANCE_MAX = 0.4
 _CHECKLIST_LIMIT = 5
+_AUDIT_DISTANCE_MAX = 0.25
+_AUDIT_LIMIT = 20
 
-_PHASES = ["red", "green", "refactor", "review", "close"]
-_GATE_TYPES = ["tests", "lint", "fmt", "coverage", "adversarial"]
+_PHASES = ["red", "green", "refactor", "review", "close", "memory-audit"]
+_GATE_TYPES = ["tests", "lint", "fmt", "coverage", "adversarial", "memory-audit"]
 _STATUSES = ["pass", "fail", "skip"]
-_RUN_PHASES = ["tests", "lint", "fmt"]
+_RUN_PHASES = ["tests", "lint", "fmt", "memory-audit"]
 
 
 def _get_conn():
@@ -126,15 +129,209 @@ def _print_constraint_checklist(conn, task_slug: str) -> None:
     click.echo("")
 
 
+def _extract_keywords(content: str) -> list[str]:
+    """Extract meaningful terms from constraint content for evidence matching."""
+    import re
+
+    # strip known prefixes
+    content = re.sub(
+        r"^(ALWAYS|NEVER|CHECK|DECIDED|AVOID|WHEN)\s*:?\s*",
+        "",
+        content,
+        flags=re.IGNORECASE,
+    )
+    words = re.findall(r"[a-zA-Z0-9_./\-]{3,}", content)
+    # filter stopwords
+    stopwords = {
+        "and",
+        "the",
+        "for",
+        "with",
+        "that",
+        "this",
+        "from",
+        "are",
+        "must",
+        "not",
+    }
+    return [w.lower() for w in words if w.lower() not in stopwords]
+
+
+def _has_evidence(keywords: list[str], task_slug: str, conn) -> bool:
+    """Check if constraint keywords appear in git-modified files or plan.md."""
+    import subprocess
+
+    # check plan.md
+    paths = get_project_paths()
+    plan_path = paths.root / ".specify" / "tasks" / task_slug / "plan.md"
+    if plan_path.exists():
+        plan_text = plan_path.read_text().lower()
+        if any(kw in plan_text for kw in keywords):
+            return True
+
+    # check git-modified files (working tree, staged, and last commit)
+    try:
+        cwd = str(paths.root)
+        modified: list[str] = []
+        for cmd in [
+            ["git", "diff", "--name-only", "HEAD"],
+            ["git", "diff", "--name-only", "--cached"],
+            ["git", "show", "--name-only", "--format=", "HEAD"],
+        ]:
+            r = subprocess.run(cmd, capture_output=True, text=True, cwd=cwd)
+            modified += r.stdout.splitlines()
+
+        for fname in set(f for f in modified if f.strip()):
+            fpath = paths.root / fname
+            if fpath.exists() and fpath.stat().st_size < 500_000:
+                try:
+                    text = fpath.read_text(errors="ignore").lower()
+                    if any(kw in text for kw in keywords):
+                        return True
+                except OSError:
+                    pass
+    except Exception:
+        pass
+
+    return False
+
+
+def _run_memory_audit(conn, task_slug: str) -> tuple[str, str]:
+    """
+    Returns (status, output) where status is 'pass' or 'fail'.
+    Checks relevant constraints against evidence in modified files and not-applicable links.
+    """
+    task = task_db.get(conn, task_slug)
+    query = task.title if task else task_slug
+
+    provider = get_provider(warn=False)
+    if not provider.available():
+        gate_db.record(
+            conn,
+            task_slug=task_slug,
+            phase="memory-audit",
+            gate_type="memory-audit",
+            status="skip",
+            output="embedding provider unavailable",
+        )
+        return "skip", "memory-audit: skip (provider unavailable)"
+
+    embedding = provider.embed(query)
+    if not embedding:
+        gate_db.record(
+            conn,
+            task_slug=task_slug,
+            phase="memory-audit",
+            gate_type="memory-audit",
+            status="skip",
+            output="embed returned None",
+        )
+        return "skip", "memory-audit: skip (embed failed)"
+
+    results = vec_db.search(conn, embedding, limit=_AUDIT_LIMIT)
+    failing: list[mem_db.Memory] = []
+
+    for mid, dist in results:
+        if dist > _AUDIT_DISTANCE_MAX:
+            continue
+        m = mem_db.get(conn, mid)
+        if m is None or m.type != "constraint":
+            continue
+        # check not-applicable exemption
+        if links_db.exists(
+            conn, memory_id=m.id, task_slug=task_slug, kind="not-applicable"
+        ):
+            continue
+        # check evidence in modified files / plan
+        keywords = _extract_keywords(m.content)
+        if keywords and _has_evidence(keywords, task_slug, conn):
+            continue
+        failing.append(m)
+
+    if not failing:
+        gate_db.record(
+            conn,
+            task_slug=task_slug,
+            phase="memory-audit",
+            gate_type="memory-audit",
+            status="pass",
+        )
+        return "pass", "✓ memory-audit: pass"
+
+    lines = ["✗ MEMORY AUDIT FAILED", "─" * 50]
+    for m in failing:
+        src = f" [{m.source}]" if m.source else ""
+        lines.append(f"\nConstraint [{m.id}]{src} not addressed:")
+        lines.append(f"  {m.content}")
+        lines.append(
+            f"  → specify memory link --kind not-applicable "
+            f'--memory {m.id} --task {task_slug} --note "<reason>"'
+        )
+    lines.append("")
+    output = "\n".join(lines)
+
+    gate_db.record(
+        conn,
+        task_slug=task_slug,
+        phase="memory-audit",
+        gate_type="memory-audit",
+        status="fail",
+        output=output[:4000],
+    )
+    return "fail", output
+
+
 @cmd_gate.command("run")
 @click.option("--task", "task_slug", required=True, help="Slug da task")
-@click.option("--phase", required=True, type=click.Choice(_RUN_PHASES))
+@click.option("--phase", default=None, type=click.Choice(_RUN_PHASES))
+@click.option(
+    "--skip-memory-audit", "skip_audit", is_flag=True, help="Suprimir memory-audit"
+)
 @click.option(
     "--cwd", "cwd_path", default=None, help="Diretório do projeto (padrão: CWD)"
 )
 @click.option("--iteration", default=1, type=int)
-def cmd_run(task_slug: str, phase: str, cwd_path: str | None, iteration: int) -> None:
+def cmd_run(
+    task_slug: str,
+    phase: str | None,
+    skip_audit: bool,
+    cwd_path: str | None,
+    iteration: int,
+) -> None:
     """Executa um gate e registra o resultado no DB."""
+    # memory-audit only phase
+    if phase == "memory-audit":
+        conn = _get_conn()
+        status, output = _run_memory_audit(conn, task_slug)
+        conn.close()
+        click.echo(output)
+        if status == "fail":
+            raise SystemExit(1)
+        return
+
+    # pipeline mode (no --phase): run memory-audit then tests
+    if phase is None:
+        conn = _get_conn()
+        if not skip_audit:
+            click.echo("running memory-audit...")
+            status, output = _run_memory_audit(conn, task_slug)
+            conn.close()
+            click.echo(output)
+            if status == "fail":
+                raise SystemExit(1)
+        else:
+            gate_db.record(
+                conn,
+                task_slug=task_slug,
+                phase="memory-audit",
+                gate_type="memory-audit",
+                status="skip",
+                output="--skip-memory-audit flag",
+            )
+            conn.close()
+            click.echo("memory-audit: skipped (--skip-memory-audit)")
+        phase = "tests"
+
     cwd = Path(cwd_path) if cwd_path else Path.cwd()
     lang = detect(cwd)
     if lang is None:
