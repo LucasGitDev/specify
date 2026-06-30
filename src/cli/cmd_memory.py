@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json as _json
+import re
 
 import click
 
@@ -12,6 +13,35 @@ from src.db import vectors as vec_db
 from src.db.connection import get_connection
 from src.db.schema import migrate
 from src.embeddings.provider import get_provider
+
+_KNOWN_PREFIXES = re.compile(
+    r"^(ALWAYS|NEVER|CHECK|DECIDED|AVOID)\s*:|^WHEN\b", re.IGNORECASE
+)
+
+_PREFIX_TEMPLATES = {
+    "constraint": "ALWAYS: {content}",
+    "pattern": "WHEN <condition> DO: {content}",
+    "decision": "DECIDED: {content}",
+}
+
+
+def _suggest_prefix(mem_type: str, content: str) -> str | None:
+    if _KNOWN_PREFIXES.match(content.strip()):
+        return None
+    template = _PREFIX_TEMPLATES.get(mem_type)
+    if template is None:
+        return None
+    return template.format(content=content)
+
+
+def _highlight_content(content: str) -> str:
+    m = _KNOWN_PREFIXES.match(content.strip())
+    if not m:
+        return content
+    prefix_end = m.end()
+    prefix = content[:prefix_end]
+    rest = content[prefix_end:]
+    return f"[{prefix}]{rest}"
 
 
 def _get_conn():
@@ -25,7 +55,9 @@ def _get_conn():
     return conn
 
 
-def _format_memory(m: mem_db.Memory, *, as_json: bool = False) -> str:
+def _format_memory(
+    m: mem_db.Memory, *, as_json: bool = False, highlight: bool = False
+) -> str:
     if as_json:
         return _json.dumps(
             {
@@ -38,7 +70,8 @@ def _format_memory(m: mem_db.Memory, *, as_json: bool = False) -> str:
             }
         )
     src = f" [{m.source}]" if m.source else ""
-    return f"[{m.id}] ({m.type}/{m.scope}){src}\n    {m.content}"
+    content = _highlight_content(m.content) if highlight else m.content
+    return f"[{m.id}] ({m.type}/{m.scope}){src}\n    {content}"
 
 
 @click.group("memory")
@@ -72,6 +105,9 @@ def cmd_set(mem_type: str, content: str, scope: str, source: str | None) -> None
 
     conn.close()
     click.echo(f"memória [{memory_id}] salva ({mem_type}/{scope})")
+    suggestion = _suggest_prefix(mem_type, content)
+    if suggestion:
+        click.echo(f"  sugestão de formato: {suggestion}", err=False)
 
 
 @cmd_memory.command("get")
@@ -108,7 +144,7 @@ def cmd_list(scope: str | None, mem_type: str | None, as_json: bool) -> None:
         )
     else:
         for m in memories:
-            click.echo(_format_memory(m))
+            click.echo(_format_memory(m, highlight=True))
 
 
 @cmd_memory.command("search")
@@ -190,6 +226,56 @@ def cmd_stats(as_json: bool) -> None:
             click.echo(
                 f"  {row['searched_at']}{src} → {row['results_count']} resultado(s): {row['query']}"
             )
+
+
+@cmd_memory.command("reformat")
+@click.option(
+    "--id", "memory_id", type=int, default=None, help="ID da memória a reformatar"
+)
+@click.option("--dry-run", is_flag=True, help="Exibe mudanças sem alterar o banco")
+def cmd_reformat(memory_id: int | None, dry_run: bool) -> None:
+    """Reformata memórias sem prefixo para o padrão prescritivo."""
+    conn = _get_conn()
+
+    if memory_id is not None:
+        memories = [mem_db.get(conn, memory_id)]
+        if memories[0] is None:
+            conn.close()
+            raise click.ClickException(f"memória [{memory_id}] não encontrada")
+    else:
+        memories = mem_db.list_all(conn)
+
+    to_reformat = [
+        (m, _suggest_prefix(m.type, m.content))
+        for m in memories
+        if m is not None and _suggest_prefix(m.type, m.content) is not None
+    ]
+
+    if not to_reformat:
+        conn.close()
+        click.echo("nenhuma memória sem prefixo encontrada")
+        return
+
+    if dry_run:
+        for m, suggestion in to_reformat:
+            click.echo(f"[{m.id}] ({m.type}) →")
+            click.echo(f"  antes:  {m.content}")
+            click.echo(f"  depois: {suggestion}")
+        conn.close()
+        return
+
+    if len(to_reformat) > 5:
+        click.echo(f"{len(to_reformat)} memórias serão reformatadas.")
+        if not click.confirm("Prosseguir?"):
+            conn.close()
+            click.echo("cancelado")
+            return
+
+    for m, suggestion in to_reformat:
+        mem_db.update(conn, m.id, suggestion)
+        click.echo(f"[{m.id}] atualizado")
+
+    conn.close()
 
 
 @cmd_memory.command("delete")

@@ -1,7 +1,7 @@
 """RED — tests for prescriptive memory format (memory-format spec)."""
+
 from __future__ import annotations
 
-import sqlite3
 from unittest.mock import patch
 
 import pytest
@@ -22,17 +22,34 @@ def db(tmp_path):
 
 
 @pytest.fixture
-def runner(tmp_path, monkeypatch):
-    """CLI runner with an initialized project in tmp_path."""
+def project(tmp_path):
+    """Minimal git project with specify initialized."""
+    import subprocess
+
+    subprocess.run(["git", "init", str(tmp_path)], check=True, capture_output=True)
+    subprocess.run(
+        ["git", "-C", str(tmp_path), "config", "user.email", "t@t.com"],
+        check=True,
+        capture_output=True,
+    )
+    subprocess.run(
+        ["git", "-C", str(tmp_path), "config", "user.name", "T"],
+        check=True,
+        capture_output=True,
+    )
     specify_dir = tmp_path / ".specify"
     specify_dir.mkdir()
     db_path = specify_dir / "specify.db"
     conn = get_connection(db_path)
     migrate(conn)
     conn.close()
+    return tmp_path
 
-    monkeypatch.chdir(tmp_path)
-    # Disable embedding provider so tests don't need a model
+
+@pytest.fixture
+def runner(project, monkeypatch):
+    """CLI runner with an initialized project."""
+    monkeypatch.chdir(project)
     with patch("src.cli.cmd_memory.get_provider") as mock_provider:
         mock_provider.return_value.available.return_value = False
         yield CliRunner()
@@ -97,7 +114,10 @@ class TestCmdSetSuggestion:
         )
         assert result.exit_code == 0
         assert "memória" in result.output
-        assert any(p in result.output for p in ("ALWAYS:", "NEVER:", "CHECK:", "sugestão", "Sugestão"))
+        assert any(
+            p in result.output
+            for p in ("ALWAYS:", "NEVER:", "CHECK:", "sugestão", "Sugestão")
+        )
 
     def test_set_pattern_without_prefix_prints_suggestion(self, runner):
         result = runner.invoke(
@@ -138,37 +158,27 @@ class TestCmdSetSuggestion:
 
 
 class TestCmdReformat:
-    def test_reformat_dry_run_does_not_alter_db(self, runner, tmp_path, monkeypatch):
-        monkeypatch.chdir(tmp_path)
-        specify_dir = tmp_path / ".specify"
-        db_path = specify_dir / "specify.db"
+    def test_reformat_dry_run_does_not_alter_db(self, runner, project):
+        db_path = project / ".specify" / "specify.db"
         conn = get_connection(db_path)
-        migrate(conn)
         mid = insert(conn, type="constraint", content="go build deve passar")
         original = get(conn, mid).content
         conn.close()
 
-        with patch("src.cli.cmd_memory.get_provider") as mp:
-            mp.return_value.available.return_value = False
-            result = runner.invoke(cmd_memory, ["reformat", "--id", str(mid), "--dry-run"])
+        result = runner.invoke(cmd_memory, ["reformat", "--id", str(mid), "--dry-run"])
 
         assert result.exit_code == 0
         conn2 = get_connection(db_path)
         assert get(conn2, mid).content == original
         conn2.close()
 
-    def test_reformat_single_id_updates_content(self, runner, tmp_path, monkeypatch):
-        monkeypatch.chdir(tmp_path)
-        specify_dir = tmp_path / ".specify"
-        db_path = specify_dir / "specify.db"
+    def test_reformat_single_id_updates_content(self, runner, project):
+        db_path = project / ".specify" / "specify.db"
         conn = get_connection(db_path)
-        migrate(conn)
         mid = insert(conn, type="constraint", content="go build deve passar")
         conn.close()
 
-        with patch("src.cli.cmd_memory.get_provider") as mp:
-            mp.return_value.available.return_value = False
-            result = runner.invoke(cmd_memory, ["reformat", "--id", str(mid)])
+        result = runner.invoke(cmd_memory, ["reformat", "--id", str(mid)])
 
         assert result.exit_code == 0
         conn2 = get_connection(db_path)
@@ -176,19 +186,16 @@ class TestCmdReformat:
         conn2.close()
         assert any(updated.startswith(p) for p in ("ALWAYS:", "NEVER:", "CHECK:"))
 
-    def test_reformat_all_skips_already_prefixed(self, runner, tmp_path, monkeypatch):
-        monkeypatch.chdir(tmp_path)
-        specify_dir = tmp_path / ".specify"
-        db_path = specify_dir / "specify.db"
+    def test_reformat_all_skips_already_prefixed(self, runner, project):
+        db_path = project / ".specify" / "specify.db"
         conn = get_connection(db_path)
-        migrate(conn)
         mid_prefixed = insert(conn, type="constraint", content="ALWAYS: run build")
-        mid_unprefixed = insert(conn, type="constraint", content="go mod verify deve passar")
+        mid_unprefixed = insert(
+            conn, type="constraint", content="go mod verify deve passar"
+        )
         conn.close()
 
-        with patch("src.cli.cmd_memory.get_provider") as mp:
-            mp.return_value.available.return_value = False
-            result = runner.invoke(cmd_memory, ["reformat"])
+        result = runner.invoke(cmd_memory, ["reformat"])
 
         assert result.exit_code == 0
         conn2 = get_connection(db_path)
@@ -197,36 +204,29 @@ class TestCmdReformat:
         conn2.close()
         assert any(updated.startswith(p) for p in ("ALWAYS:", "NEVER:", "CHECK:"))
 
-    def test_reformat_bulk_confirms_when_more_than_5(self, runner, tmp_path, monkeypatch):
-        monkeypatch.chdir(tmp_path)
-        specify_dir = tmp_path / ".specify"
-        db_path = specify_dir / "specify.db"
+    def test_reformat_bulk_confirms_when_more_than_5(self, runner, project):
+        db_path = project / ".specify" / "specify.db"
         conn = get_connection(db_path)
-        migrate(conn)
         for i in range(6):
             insert(conn, type="constraint", content=f"constraint sem prefixo {i}")
         conn.close()
 
-        with patch("src.cli.cmd_memory.get_provider") as mp:
-            mp.return_value.available.return_value = False
-            # answer "n" to confirmation — should abort
-            result = runner.invoke(cmd_memory, ["reformat"], input="n\n")
+        result = runner.invoke(cmd_memory, ["reformat"], input="n\n")
 
         assert result.exit_code == 0
-        assert "abort" in result.output.lower() or "cancelado" in result.output.lower() or "n" in result.output.lower()
+        assert (
+            "abort" in result.output.lower()
+            or "cancelado" in result.output.lower()
+            or "n" in result.output.lower()
+        )
 
-    def test_reformat_dry_run_prints_proposed_changes(self, runner, tmp_path, monkeypatch):
-        monkeypatch.chdir(tmp_path)
-        specify_dir = tmp_path / ".specify"
-        db_path = specify_dir / "specify.db"
+    def test_reformat_dry_run_prints_proposed_changes(self, runner, project):
+        db_path = project / ".specify" / "specify.db"
         conn = get_connection(db_path)
-        migrate(conn)
         mid = insert(conn, type="decision", content="manter toolchain 1.22")
         conn.close()
 
-        with patch("src.cli.cmd_memory.get_provider") as mp:
-            mp.return_value.available.return_value = False
-            result = runner.invoke(cmd_memory, ["reformat", "--id", str(mid), "--dry-run"])
+        result = runner.invoke(cmd_memory, ["reformat", "--id", str(mid), "--dry-run"])
 
         assert result.exit_code == 0
         assert "DECIDED:" in result.output
@@ -236,20 +236,14 @@ class TestCmdReformat:
 
 
 class TestCmdListHighlight:
-    def test_list_shows_prefix_distinctly(self, runner, tmp_path, monkeypatch):
-        monkeypatch.chdir(tmp_path)
-        specify_dir = tmp_path / ".specify"
-        db_path = specify_dir / "specify.db"
+    def test_list_shows_prefix_distinctly(self, runner, project):
+        db_path = project / ".specify" / "specify.db"
         conn = get_connection(db_path)
-        migrate(conn)
         insert(conn, type="constraint", content="ALWAYS: run go build ./...")
         insert(conn, type="constraint", content="sem prefixo aqui")
         conn.close()
 
-        with patch("src.cli.cmd_memory.get_provider") as mp:
-            mp.return_value.available.return_value = False
-            result = runner.invoke(cmd_memory, ["list"])
+        result = runner.invoke(cmd_memory, ["list"])
 
         assert result.exit_code == 0
-        # ALWAYS: should appear with some visual treatment (brackets, bold marker, or as-is)
         assert "ALWAYS:" in result.output
