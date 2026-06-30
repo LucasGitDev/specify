@@ -29,6 +29,7 @@
       display: flex;
       gap: 8px;
       z-index: 10;
+      flex-wrap: wrap;
     }
 
     .legend {
@@ -60,6 +61,13 @@
       flex-shrink: 0;
     }
 
+    .legend-diamond {
+      width: 10px;
+      height: 10px;
+      transform: rotate(45deg);
+      flex-shrink: 0;
+    }
+
     button {
       background: #21262d;
       border: 1px solid #30363d;
@@ -73,8 +81,14 @@
 
     button:hover { background: #30363d; }
 
+    button.active {
+      background: #388bfd22;
+      border-color: #388bfd;
+      color: #79c0ff;
+    }
+
     #sidebar {
-      width: 320px;
+      width: 340px;
       background: #161b22;
       border-left: 1px solid #30363d;
       display: flex;
@@ -111,9 +125,15 @@
       font-weight: 600;
     }
 
-    .badge-decision  { background: #1f3a5f; color: #79c0ff; }
-    .badge-pattern   { background: #1a3a2a; color: #56d364; }
-    .badge-constraint{ background: #3d1e1e; color: #f97583; }
+    .badge-decision   { background: #1f3a5f; color: #79c0ff; }
+    .badge-pattern    { background: #1a3a2a; color: #56d364; }
+    .badge-constraint { background: #3d1e1e; color: #f97583; }
+    .badge-task       { background: #2d1b69; color: #d2a8ff; }
+
+    .badge-status-planned    { background: #21262d; color: #8b949e; }
+    .badge-status-in_progress{ background: #1f3a5f; color: #79c0ff; }
+    .badge-status-review     { background: #3d2c00; color: #e3b341; }
+    .badge-status-closed     { background: #1a3a2a; color: #56d364; }
 
     textarea {
       width: 100%;
@@ -227,6 +247,25 @@
 
     .search-item .query { color: #c9d1d9; word-break: break-all; }
     .search-item .meta { font-size: 10px; color: #6e7681; }
+
+    .gate-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 11px;
+      padding: 3px 0;
+      border-bottom: 1px solid #21262d;
+      color: #8b949e;
+    }
+
+    .gate-pass { color: #56d364; }
+    .gate-fail { color: #f97583; }
+
+    a.result-link {
+      color: #58a6ff;
+      font-size: 12px;
+      text-decoration: none;
+    }
+    a.result-link:hover { text-decoration: underline; }
   </style>
 </head>
 <body>
@@ -237,38 +276,47 @@
     <button onclick="toggleSidebar()">Panel</button>
     <button onclick="toggleStats()">Stats</button>
     <button onclick="resetLayout()">Reset layout</button>
+    <button id="filter-decision"  class="active" onclick="toggleFilter('decision')">decision</button>
+    <button id="filter-pattern"   class="active" onclick="toggleFilter('pattern')">pattern</button>
+    <button id="filter-constraint"class="active" onclick="toggleFilter('constraint')">constraint</button>
+    <button id="filter-task"      class="active" onclick="toggleFilter('task')">task</button>
   </div>
 
   <div id="stats-panel">
     <h3>Usage stats</h3>
     <div id="stats-content"></div>
   </div>
+
   <div class="legend">
     <div class="legend-item"><span class="legend-dot" style="background:#79c0ff"></span>decision</div>
     <div class="legend-item"><span class="legend-dot" style="background:#56d364"></span>pattern</div>
     <div class="legend-item"><span class="legend-dot" style="background:#f97583"></span>constraint</div>
+    <div class="legend-item"><span class="legend-diamond" style="background:#d2a8ff"></span>task</div>
   </div>
+
   <div id="stats"></div>
 </div>
 
 <div id="sidebar">
   <div id="empty-state">Click a node to inspect</div>
-  <div id="node-detail" style="display:none; gap:16px; flex-direction:column;">
+
+  <!-- Memory detail -->
+  <div id="memory-detail" style="display:none; gap:16px; flex-direction:column;">
     <div>
       <div class="field-label">Type</div>
-      <span id="detail-badge" class="badge"></span>
+      <span id="mem-badge" class="badge"></span>
     </div>
     <div>
       <div class="field-label">Scope</div>
-      <span id="detail-scope" class="meta-row"></span>
+      <span id="mem-scope" class="meta-row"></span>
     </div>
-    <div id="detail-source-row" style="display:none">
+    <div id="mem-source-row" style="display:none">
       <div class="field-label">Source</div>
-      <span id="detail-source" class="meta-row"></span>
+      <span id="mem-source" class="meta-row"></span>
     </div>
     <div>
       <div class="field-label">Content</div>
-      <textarea id="detail-content"></textarea>
+      <textarea id="mem-content"></textarea>
     </div>
     <div style="display:flex; gap:8px;">
       <button class="btn-save" onclick="saveMemory()">Save</button>
@@ -276,7 +324,39 @@
     </div>
     <div>
       <div class="field-label">Updated</div>
-      <span id="detail-updated" class="meta-row"></span>
+      <span id="mem-updated" class="meta-row"></span>
+    </div>
+  </div>
+
+  <!-- Task detail -->
+  <div id="task-detail" style="display:none; gap:16px; flex-direction:column;">
+    <div style="display:flex; align-items:center; gap:8px;">
+      <span class="badge badge-task">task</span>
+      <span id="task-status-badge" class="badge"></span>
+    </div>
+    <div>
+      <div class="field-label">Title</div>
+      <span id="task-title" class="meta-row" style="color:#e6edf3; font-size:14px;"></span>
+    </div>
+    <div>
+      <div class="field-label">Slug</div>
+      <span id="task-slug" class="meta-row"></span>
+    </div>
+    <div id="task-spec-row" style="display:none">
+      <div class="field-label">Spec</div>
+      <span id="task-spec" class="meta-row"></span>
+    </div>
+    <div id="task-gates-section" style="display:none">
+      <div class="field-label">Gates</div>
+      <div id="task-gates"></div>
+    </div>
+    <div id="task-result-row" style="display:none">
+      <div class="field-label">Result</div>
+      <a id="task-result-link" class="result-link" href="#"></a>
+    </div>
+    <div>
+      <div class="field-label">Created</div>
+      <span id="task-created" class="meta-row"></span>
     </div>
   </div>
 </div>
@@ -286,11 +366,26 @@ const TYPE_COLORS = {
   decision:   '#79c0ff',
   pattern:    '#56d364',
   constraint: '#f97583',
+  task:       '#d2a8ff',
+};
+
+const EDGE_COLORS = {
+  semantic: 'rgba(139,148,158,0.25)',
+  scope:    'rgba(210,168,255,0.35)',
+};
+
+const NODE_SIZES = {
+  decision: 10,
+  pattern: 10,
+  constraint: 10,
+  task: 16,
 };
 
 let sigmaInstance = null;
 let graphInstance = null;
+let rawData = null;
 let selectedNodeId = null;
+const activeFilters = new Set(['decision', 'pattern', 'constraint', 'task']);
 
 async function loadGraph() {
   const res = await fetch('/api/graph');
@@ -301,30 +396,35 @@ function buildSigmaGraph(data) {
   const g = new graphology.Graph({ multi: false, type: 'undirected' });
 
   data.nodes.forEach(n => {
+    if (!activeFilters.has(n.type)) return;
     const color = TYPE_COLORS[n.type] || '#8b949e';
-    // truncate label for readability
-    const shortLabel = n.label.length > 40 ? n.label.slice(0, 40) + '…' : n.label;
+    const size = NODE_SIZES[n.type] || 10;
+    const rawLabel = n.label || n.id;
+    const shortLabel = rawLabel.length > 40 ? rawLabel.slice(0, 40) + '…' : rawLabel;
     g.addNode(n.id, {
       label: shortLabel,
-      fullLabel: n.label,
+      fullLabel: rawLabel,
       memType: n.type,
-      scope: n.scope,
-      source: n.source,
+      scope: n.scope || null,
+      source: n.source || null,
+      status: n.status || null,
       color,
-      size: 10,
+      size,
       x: Math.random() * 100,
       y: Math.random() * 100,
     });
   });
 
   data.edges.forEach(e => {
-    if (g.hasNode(e.source) && g.hasNode(e.target) && !g.hasEdge(e.source, e.target)) {
-      g.addEdge(e.source, e.target, {
-        weight: e.weight,
-        color: 'rgba(139,148,158,0.25)',
-        size: Math.max(0.5, e.weight * 2),
-      });
-    }
+    if (!g.hasNode(e.source) || !g.hasNode(e.target)) return;
+    if (g.hasEdge(e.source, e.target)) return;
+    const kind = e.kind || 'semantic';
+    g.addEdge(e.source, e.target, {
+      weight: e.weight || 1,
+      kind,
+      color: EDGE_COLORS[kind] || EDGE_COLORS.semantic,
+      size: kind === 'scope' ? 1.5 : Math.max(0.5, (e.weight || 0.5) * 2),
+    });
   });
 
   return g;
@@ -332,7 +432,6 @@ function buildSigmaGraph(data) {
 
 function applyLayout(g) {
   if (g.order === 0) return;
-  // Simple force-directed layout: repulsion + edge attraction, no external dep.
   const nodes = g.nodes();
   const N = nodes.length;
   const pos = {};
@@ -343,7 +442,6 @@ function applyLayout(g) {
   for (let iter = 0; iter < 120; iter++) {
     const disp = {};
     nodes.forEach(id => { disp[id] = { x: 0, y: 0 }; });
-    // repulsion
     for (let i = 0; i < N; i++) {
       for (let j = i + 1; j < N; j++) {
         const a = nodes[i], b = nodes[j];
@@ -355,7 +453,6 @@ function applyLayout(g) {
         disp[b].x -= dx * f; disp[b].y -= dy * f;
       }
     }
-    // attraction
     g.edges().forEach(e => {
       const s = g.source(e), t = g.target(e);
       const dx = pos[s].x - pos[t].x;
@@ -365,12 +462,10 @@ function applyLayout(g) {
       disp[s].x -= dx * f; disp[s].y -= dy * f;
       disp[t].x += dx * f; disp[t].y += dy * f;
     });
-    // gravity toward center
     nodes.forEach(id => {
       disp[id].x -= pos[id].x * 0.02;
       disp[id].y -= pos[id].y * 0.02;
     });
-    // apply displacement
     const temp = Math.max(0.5, 5 * (1 - iter / 120));
     nodes.forEach(id => {
       const dd = Math.sqrt(disp[id].x ** 2 + disp[id].y ** 2) + 0.01;
@@ -386,9 +481,9 @@ function applyLayout(g) {
 
 async function initGraph() {
   const container = document.getElementById('graph-container');
-  const data = await loadGraph();
+  rawData = await loadGraph();
 
-  graphInstance = buildSigmaGraph(data);
+  graphInstance = buildSigmaGraph(rawData);
   applyLayout(graphInstance);
 
   if (sigmaInstance) sigmaInstance.kill();
@@ -404,7 +499,7 @@ async function initGraph() {
       ...data,
       highlighted: node === selectedNodeId,
       borderColor: node === selectedNodeId ? '#f0f6fc' : undefined,
-      size: node === selectedNodeId ? 14 : 10,
+      size: node === selectedNodeId ? data.size + 4 : data.size,
     }),
   });
 
@@ -421,35 +516,47 @@ async function initGraph() {
     sigmaInstance.refresh();
   });
 
-  updateStats(data);
+  updateStats(rawData);
 }
 
 function updateStats(data) {
-  const el = document.getElementById('stats');
-  el.textContent = `${data.nodes.length} nodes · ${data.edges.length} edges`;
+  document.getElementById('stats').textContent =
+    `${data.nodes.length} nodes · ${data.edges.length} edges`;
 }
 
 async function openDetail(nodeId, attrs) {
-  const res = await fetch(`/api/memories/${nodeId}`);
-  if (!res.ok) return;
-  const m = await res.json();
+  if (attrs.memType === 'task') {
+    const slug = nodeId.replace(/^t:/, '');
+    const res = await fetch(`/api/tasks/${slug}`);
+    if (!res.ok) return;
+    const t = await res.json();
+    renderTaskDetail(t);
+  } else {
+    const res = await fetch(`/api/memories/${nodeId}`);
+    if (!res.ok) return;
+    const m = await res.json();
+    renderMemoryDetail(nodeId, m);
+  }
+}
 
+function renderMemoryDetail(nodeId, m) {
   document.getElementById('empty-state').style.display = 'none';
-  const detail = document.getElementById('node-detail');
+  document.getElementById('task-detail').style.display = 'none';
+  const detail = document.getElementById('memory-detail');
   detail.style.display = 'flex';
 
-  const badge = document.getElementById('detail-badge');
+  const badge = document.getElementById('mem-badge');
   badge.textContent = m.type;
   badge.className = `badge badge-${m.type}`;
 
-  document.getElementById('detail-scope').textContent = m.scope;
-  document.getElementById('detail-content').value = m.content;
-  document.getElementById('detail-updated').textContent = m.updated_at;
+  document.getElementById('mem-scope').textContent = m.scope;
+  document.getElementById('mem-content').value = m.content;
+  document.getElementById('mem-updated').textContent = m.updated_at;
 
-  const srcRow = document.getElementById('detail-source-row');
+  const srcRow = document.getElementById('mem-source-row');
   if (m.source) {
     srcRow.style.display = 'block';
-    document.getElementById('detail-source').textContent = m.source;
+    document.getElementById('mem-source').textContent = m.source;
   } else {
     srcRow.style.display = 'none';
   }
@@ -457,15 +564,60 @@ async function openDetail(nodeId, attrs) {
   detail.dataset.nodeId = nodeId;
 }
 
+function renderTaskDetail(t) {
+  document.getElementById('empty-state').style.display = 'none';
+  document.getElementById('memory-detail').style.display = 'none';
+  const detail = document.getElementById('task-detail');
+  detail.style.display = 'flex';
+
+  const statusBadge = document.getElementById('task-status-badge');
+  statusBadge.textContent = t.status;
+  statusBadge.className = `badge badge-status-${t.status}`;
+
+  document.getElementById('task-title').textContent = t.title;
+  document.getElementById('task-slug').textContent = t.slug;
+  document.getElementById('task-created').textContent = t.created_at;
+
+  const specRow = document.getElementById('task-spec-row');
+  if (t.spec_path) {
+    specRow.style.display = 'block';
+    document.getElementById('task-spec').textContent = t.spec_path;
+  } else {
+    specRow.style.display = 'none';
+  }
+
+  const gatesSection = document.getElementById('task-gates-section');
+  if (t.gates && t.gates.length) {
+    gatesSection.style.display = 'block';
+    document.getElementById('task-gates').innerHTML = t.gates.map(g => {
+      const cls = g.result === 'pass' ? 'gate-pass' : 'gate-fail';
+      return `<div class="gate-row"><span>${g.phase}</span><span class="${cls}">${g.result}</span></div>`;
+    }).join('');
+  } else {
+    gatesSection.style.display = 'none';
+  }
+
+  const resultRow = document.getElementById('task-result-row');
+  if (t.result_path) {
+    resultRow.style.display = 'block';
+    const link = document.getElementById('task-result-link');
+    link.textContent = t.result_path;
+    link.href = `#`;
+  } else {
+    resultRow.style.display = 'none';
+  }
+}
+
 function closeDetail() {
   document.getElementById('empty-state').style.display = 'block';
-  document.getElementById('node-detail').style.display = 'none';
+  document.getElementById('memory-detail').style.display = 'none';
+  document.getElementById('task-detail').style.display = 'none';
 }
 
 async function saveMemory() {
-  const detail = document.getElementById('node-detail');
+  const detail = document.getElementById('memory-detail');
   const nodeId = detail.dataset.nodeId;
-  const content = document.getElementById('detail-content').value.trim();
+  const content = document.getElementById('mem-content').value.trim();
   if (!content) return;
 
   const res = await fetch(`/api/memories/${nodeId}`, {
@@ -483,7 +635,7 @@ async function saveMemory() {
 }
 
 async function deleteMemory() {
-  const detail = document.getElementById('node-detail');
+  const detail = document.getElementById('memory-detail');
   const nodeId = detail.dataset.nodeId;
   if (!confirm('Delete this memory?')) return;
 
@@ -496,7 +648,54 @@ async function deleteMemory() {
   }
 }
 
+function toggleFilter(type) {
+  const btn = document.getElementById(`filter-${type}`);
+  if (activeFilters.has(type)) {
+    activeFilters.delete(type);
+    btn.classList.remove('active');
+  } else {
+    activeFilters.add(type);
+    btn.classList.add('active');
+  }
+  rebuildGraph();
+}
+
+async function rebuildGraph() {
+  if (!rawData) return;
+  const container = document.getElementById('graph-container');
+  graphInstance = buildSigmaGraph(rawData);
+  applyLayout(graphInstance);
+  if (sigmaInstance) sigmaInstance.kill();
+  sigmaInstance = new Sigma(graphInstance, container, {
+    defaultNodeColor: '#8b949e',
+    defaultEdgeColor: 'rgba(139,148,158,0.2)',
+    renderEdgeLabels: false,
+    labelFont: 'sans-serif',
+    labelSize: 11,
+    labelColor: { color: '#c9d1d9' },
+    nodeReducer: (node, data) => ({
+      ...data,
+      highlighted: node === selectedNodeId,
+      borderColor: node === selectedNodeId ? '#f0f6fc' : undefined,
+      size: node === selectedNodeId ? data.size + 4 : data.size,
+    }),
+  });
+  sigmaInstance.on('clickNode', ({ node }) => {
+    selectedNodeId = node;
+    openDetail(node, graphInstance.getNodeAttributes(node));
+    sigmaInstance.refresh();
+  });
+  sigmaInstance.on('clickStage', () => {
+    selectedNodeId = null;
+    closeDetail();
+    sigmaInstance.refresh();
+  });
+  closeDetail();
+  selectedNodeId = null;
+}
+
 async function reloadGraph() {
+  rawData = null;
   await initGraph();
 }
 

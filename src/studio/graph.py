@@ -5,6 +5,7 @@ import sqlite3
 from dataclasses import dataclass
 
 from src.db.memory import list_all
+from src.db.tasks import list_all as list_all_tasks
 
 
 @dataclass
@@ -14,6 +15,14 @@ class GraphNode:
     type: str
     scope: str
     source: str | None
+
+
+@dataclass
+class TaskNode:
+    id: str
+    label: str
+    type: str
+    status: str
 
 
 @dataclass
@@ -39,24 +48,46 @@ def build_graph(
     top_k: int = 3,
 ) -> dict:
     memories = list_all(conn)
+    tasks = list_all_tasks(conn)
 
-    nodes = [
-        GraphNode(
-            id=str(m.id),
-            label=m.content,
-            type=m.type,
-            scope=m.scope,
-            source=m.source,
-        )
+    memory_nodes = [
+        {
+            "id": str(m.id),
+            "label": m.content,
+            "type": m.type,
+            "scope": m.scope,
+            "source": m.source,
+        }
         for m in memories
     ]
 
-    seen: set[tuple[str, str]] = set()
-    edges: list[GraphEdge] = []
+    task_nodes = [
+        {
+            "id": f"t:{t.slug}",
+            "label": t.title,
+            "type": "task",
+            "status": t.status,
+        }
+        for t in tasks
+    ]
 
+    edges: list[dict] = []
+
+    # scope-link: task → memory when memory.scope matches task.slug
+    task_slugs = {t.slug for t in tasks}
+    for m in memories:
+        if m.scope and m.scope != "global" and m.scope in task_slugs:
+            edges.append({
+                "source": f"t:{m.scope}",
+                "target": str(m.id),
+                "kind": "scope",
+            })
+
+    # semantic edges
+    seen: set[tuple[str, str]] = set()
     ids = [m.id for m in memories if m.id in embeddings]
 
-    for i, mid_a in enumerate(ids):
+    for mid_a in ids:
         neighbors: list[tuple[float, int]] = []
         for mid_b in ids:
             if mid_a == mid_b:
@@ -71,20 +102,14 @@ def build_graph(
             if key in seen:
                 continue
             seen.add(key)
-            edges.append(GraphEdge(source=str(mid_a), target=str(mid_b), weight=sim))
+            edges.append({
+                "source": str(mid_a),
+                "target": str(mid_b),
+                "weight": sim,
+                "kind": "semantic",
+            })
 
     return {
-        "nodes": [
-            {
-                "id": n.id,
-                "label": n.label,
-                "type": n.type,
-                "scope": n.scope,
-                "source": n.source,
-            }
-            for n in nodes
-        ],
-        "edges": [
-            {"source": e.source, "target": e.target, "weight": e.weight} for e in edges
-        ],
+        "nodes": memory_nodes + task_nodes,
+        "edges": edges,
     }

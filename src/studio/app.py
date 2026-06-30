@@ -11,6 +11,7 @@ from src.db import searches as search_db
 from src.db import vectors as vec_db
 from src.db.connection import get_connection
 from src.db.schema import migrate
+from src.db import tasks as tasks_db
 from src.embeddings.provider import get_provider
 from src.studio.graph import build_graph
 
@@ -109,6 +110,40 @@ def delete_memory(memory_id: int):
         vec_db.delete_embedding(conn, memory_id)
         mem_db.delete(conn, memory_id)
         return {"ok": True}
+    finally:
+        conn.close()
+
+
+@app.get("/api/tasks/{slug}")
+def get_task(slug: str):
+    conn = _get_conn()
+    try:
+        t = tasks_db.get(conn, slug)
+        if t is None:
+            raise HTTPException(status_code=404, detail="not found")
+        gates = conn.execute(
+            "SELECT phase, result, recorded_at FROM gates WHERE task_slug = ? ORDER BY recorded_at DESC",
+            (slug,),
+        ).fetchall()
+        result_path = None
+        import os
+        candidate = f".specify/tasks/{slug}/result.md"
+        if os.path.exists(candidate):
+            result_path = candidate
+        return {
+            "id": f"t:{t.slug}",
+            "slug": t.slug,
+            "title": t.title,
+            "status": t.status,
+            "spec_path": t.spec_path,
+            "created_at": t.created_at,
+            "updated_at": t.updated_at,
+            "gates": [
+                {"phase": g["phase"], "result": g["result"], "recorded_at": g["recorded_at"]}
+                for g in gates
+            ],
+            "result_path": result_path,
+        }
     finally:
         conn.close()
 
