@@ -7,9 +7,17 @@ import click
 from src.core.logger import get_logger
 from src.core.project import find_project_root, get_project_paths
 from src.core import worktree as wt
+from src.db import memory as mem_db
 from src.db import tasks as task_db
+from src.db import vectors as vec_db
 from src.db.connection import get_connection
 from src.db.schema import migrate
+from src.embeddings.provider import get_provider
+
+# vec_db.search returns L2 distance — lower is more similar (0.0 = identical)
+_SEARCH_DISTANCE_MAX = 0.5
+_SEARCH_LIMIT = 5
+_SECTION_MAX_LINES = 15
 
 _VALID_STATUSES = ["planned", "in_progress", "review", "closed"]
 
@@ -43,6 +51,33 @@ def _format_task(t: task_db.Task, *, as_json: bool = False) -> str:
     return f"[{t.slug}] {t.status}{spec}{wt_info}\n    {t.title}"
 
 
+def _relevant_memories(conn, query: str) -> list[mem_db.Memory]:
+    provider = get_provider(warn=False)
+    if not provider.available():
+        return []
+    embedding = provider.embed(query)
+    if not embedding:
+        return []
+    results = vec_db.search(conn, embedding, limit=_SEARCH_LIMIT)
+    memories = [
+        mem_db.get(conn, mid) for mid, dist in results if dist <= _SEARCH_DISTANCE_MAX
+    ]
+    return [m for m in memories if m is not None]
+
+
+def _print_relevant_knowledge(memories: list[mem_db.Memory]) -> None:
+    if not memories:
+        return
+    lines = ["", "Relevant prior knowledge:"]
+    for m in memories:
+        lines.append(f"  [{m.type}] {m.content}")
+    lines.append("")
+    output = "\n".join(lines)
+    if len(output.splitlines()) > _SECTION_MAX_LINES:
+        output = "\n".join(output.splitlines()[:_SECTION_MAX_LINES]) + "\n"
+    click.echo(output)
+
+
 @click.group("task")
 def cmd_task() -> None:
     """Gerencia tasks do projeto."""
@@ -53,7 +88,15 @@ def cmd_task() -> None:
 @click.option("--title", required=True, help="Título da task")
 @click.option("--spec", "spec_path", default=None, help="Caminho para spec.md")
 @click.option("--worktree", is_flag=True, help="Criar worktree isolado para esta task")
-def cmd_create(slug: str, title: str, spec_path: str | None, worktree: bool) -> None:
+@click.option(
+    "--no-search",
+    "no_search",
+    is_flag=True,
+    help="Suprimir busca de memórias relevantes",
+)
+def cmd_create(
+    slug: str, title: str, spec_path: str | None, worktree: bool, no_search: bool
+) -> None:
     """Cria uma nova task."""
     conn = _get_conn()
     worktree_path: str | None = None
@@ -73,6 +116,10 @@ def cmd_create(slug: str, title: str, spec_path: str | None, worktree: bool) -> 
             raise click.ClickException(f"Erro ao criar worktree: {e}")
 
     try:
+        if not no_search:
+            memories = _relevant_memories(conn, title)
+            _print_relevant_knowledge(memories)
+
         task_id = task_db.create(
             conn,
             slug=slug,

@@ -10,8 +10,16 @@ from src.core.lang_detector import detect
 from src.core.logger import get_logger
 from src.core.project import get_project_paths
 from src.db import gates as gate_db
+from src.db import memory as mem_db
+from src.db import tasks as task_db
+from src.db import vectors as vec_db
 from src.db.connection import get_connection
 from src.db.schema import migrate
+from src.embeddings.provider import get_provider
+
+# vec_db.search returns L2 distance — lower is more similar (0.0 = identical)
+_CHECKLIST_DISTANCE_MAX = 0.4
+_CHECKLIST_LIMIT = 5
 
 _PHASES = ["red", "green", "refactor", "review", "close"]
 _GATE_TYPES = ["tests", "lint", "fmt", "coverage", "adversarial"]
@@ -88,6 +96,36 @@ def cmd_record(
     )
 
 
+def _print_constraint_checklist(conn, task_slug: str) -> None:
+    task = task_db.get(conn, task_slug)
+    query = task.title if task else task_slug
+
+    provider = get_provider(warn=False)
+    if not provider.available():
+        return
+
+    embedding = provider.embed(query)
+    if not embedding:
+        return
+
+    results = vec_db.search(conn, embedding, limit=_CHECKLIST_LIMIT)
+    constraints = []
+    for mid, dist in results:
+        if dist > _CHECKLIST_DISTANCE_MAX:
+            continue
+        m = mem_db.get(conn, mid)
+        if m is not None and m.type == "constraint":
+            constraints.append(m)
+
+    if not constraints:
+        return
+
+    click.echo("Constraint checklist:")
+    for m in constraints:
+        click.echo(f"  [ ] {m.content}")
+    click.echo("")
+
+
 @cmd_gate.command("run")
 @click.option("--task", "task_slug", required=True, help="Slug da task")
 @click.option("--phase", required=True, type=click.Choice(_RUN_PHASES))
@@ -104,6 +142,11 @@ def cmd_run(task_slug: str, phase: str, cwd_path: str | None, iteration: int) ->
             f"linguagem não detectada em '{cwd}'. "
             "Verifique se há go.mod, pyproject.toml ou package.json."
         )
+
+    conn = _get_conn()
+    if phase == "tests":
+        _print_constraint_checklist(conn, task_slug)
+    conn.close()
 
     click.echo(f"executando {phase} ({lang.language}) em {cwd}...")
 

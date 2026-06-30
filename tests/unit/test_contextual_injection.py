@@ -1,8 +1,8 @@
 """RED — tests for contextual injection at phase transition points."""
+
 from __future__ import annotations
 
 import subprocess
-from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -65,9 +65,7 @@ def _insert_memory_with_embedding(conn, db_path, mem_type, content, sim=0.8):
 
 
 class TestTaskCreateInjection:
-    def test_create_shows_relevant_knowledge_when_memories_exist(
-        self, runner, project
-    ):
+    def test_create_shows_relevant_knowledge_when_memories_exist(self, runner, project):
         db_path = project / ".specify" / "specify.db"
         conn = get_connection(db_path)
         _insert_memory_with_embedding(
@@ -93,12 +91,20 @@ class TestTaskCreateInjection:
             mp.return_value.embed.return_value = [0.0] * 384
             result = runner.invoke(
                 cmd_task,
-                ["create", "--slug", "my-task", "--title", "completely unrelated topic"],
+                [
+                    "create",
+                    "--slug",
+                    "my-task",
+                    "--title",
+                    "completely unrelated topic",
+                ],
             )
 
         assert result.exit_code == 0
         assert "Relevant prior knowledge" not in result.output
-        assert "nenhuma" not in result.output.lower() or "knowledge" not in result.output
+        assert (
+            "nenhuma" not in result.output.lower() or "knowledge" not in result.output
+        )
 
     def test_create_omits_section_when_provider_unavailable(self, runner, project):
         with patch("src.cli.cmd_task.get_provider") as mp:
@@ -149,7 +155,11 @@ class TestTaskCreateInjection:
             )
 
         assert result.exit_code == 0
-        lines = [l for l in result.output.splitlines() if "ALWAYS:" in l or "constraint" in l.lower()]
+        lines = [
+            ln
+            for ln in result.output.splitlines()
+            if "ALWAYS:" in ln or "constraint" in ln.lower()
+        ]
         assert len(lines) <= 5
 
     def test_create_output_does_not_exceed_15_lines_for_knowledge_section(
@@ -159,7 +169,10 @@ class TestTaskCreateInjection:
         conn = get_connection(db_path)
         for i in range(5):
             _insert_memory_with_embedding(
-                conn, db_path, "constraint", f"ALWAYS: constraint number {i} with long content here"
+                conn,
+                db_path,
+                "constraint",
+                f"ALWAYS: constraint number {i} with long content here",
             )
         conn.close()
 
@@ -204,7 +217,10 @@ class TestContextCommand:
             result = runner.invoke(cli, ["context", "my-task"])
 
         assert result.exit_code == 0
-        assert "Known constraints" in result.output or "constraint" in result.output.lower()
+        assert (
+            "Known constraints" in result.output
+            or "constraint" in result.output.lower()
+        )
         assert "go build" in result.output
 
     def test_context_works_without_spec_file(self, runner, project):

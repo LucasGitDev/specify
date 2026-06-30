@@ -3,6 +3,7 @@ import sys
 import click
 
 from src.cli.cmd_artifact import cmd_artifact
+from src.cli.cmd_context import cmd_context
 from src.cli.cmd_gate import cmd_gate
 from src.cli.cmd_init import cmd_init
 from src.cli.cmd_log import cmd_log
@@ -27,3 +28,4 @@ cli.add_command(cmd_gate)
 cli.add_command(cmd_artifact)
 cli.add_command(cmd_log)
 cli.add_command(cmd_studio)
+cli.add_command(cmd_context)
