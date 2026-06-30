@@ -59,10 +59,13 @@ def cmd_context(slug: str) -> None:
                     if m is not None and m.type in ("constraint", "decision"):
                         memories.append(m)
     else:
+        # fallback: substring match against task title keywords
+        keywords = [w for w in query.lower().split() if len(w) > 3]
+        candidates = mem_db.list_all(conn, type="constraint") + mem_db.list_all(
+            conn, type="decision"
+        )
         memories = [
-            m
-            for m in mem_db.list_all(conn, type="constraint")
-            + mem_db.list_all(conn, type="decision")
+            m for m in candidates if any(kw in m.content.lower() for kw in keywords)
         ][:_LIMIT]
 
     conn.close()

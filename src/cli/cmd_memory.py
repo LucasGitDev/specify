@@ -304,10 +304,15 @@ def cmd_link(kind: str, memory_id: int, task_slug: str, note: str | None) -> Non
 
     conn = _get_conn()
     from src.db import links as links_db
+    from src.db import tasks as task_db
 
     if mem_db.get(conn, memory_id) is None:
         conn.close()
         raise click.ClickException(f"memória [{memory_id}] não encontrada")
+
+    if task_db.get(conn, task_slug) is None:
+        conn.close()
+        raise click.ClickException(f"task '{task_slug}' não encontrada")
 
     try:
         lid = links_db.insert(
