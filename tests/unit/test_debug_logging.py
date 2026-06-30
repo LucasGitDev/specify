@@ -256,6 +256,53 @@ def test_memory_search_logs_query_and_count(monkeypatch, tmp_path):
     assert "result" in log_content
 
 
+# ── Critério 2 — gate run loga comando, duração, status, output ──
+
+
+def test_gate_run_logs_details(monkeypatch, tmp_path):
+    log_file = tmp_path / "specify.log"
+    monkeypatch.setenv("SPECIFY_DEBUG", "1")
+    monkeypatch.setenv("SPECIFY_LOG_PATH", str(log_file))
+    _fresh_logger()
+
+    root = _setup_project(tmp_path)
+    monkeypatch.chdir(root)
+
+    from src.db.connection import get_connection
+    from src.db.schema import migrate
+    from src.core.gate_validator import GateResult
+
+    conn = get_connection(root / ".specify" / "specify.db")
+    migrate(conn)
+    conn.close()
+
+    fake_result = GateResult(
+        gate_type="tests",
+        passed=True,
+        output="5 passed",
+        duration_ms=42,
+        command="pytest tests/",
+    )
+
+    import src.cli.cmd_gate as cmd_gate_mod
+    monkeypatch.setattr(cmd_gate_mod, "run_tests", lambda lang, cwd, **kw: fake_result)
+
+    runner = CliRunner()
+    result = runner.invoke(
+        cli,
+        ["gate", "run", "--task", "my-task", "--phase", "tests"],
+        catch_exceptions=False,
+    )
+    assert result.exit_code == 0
+
+    log_content = log_file.read_text()
+    assert "gate run" in log_content
+    assert "my-task" in log_content
+    assert "pass" in log_content
+    assert "42" in log_content
+    assert "pytest" in log_content
+
+
 # ── Critérios 8+9 — specify log tail / clear ──
 
 
