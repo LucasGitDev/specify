@@ -127,6 +127,7 @@ def get_task(slug: str):
         ).fetchall()
         result_path = None
         import os
+
         candidate = f".specify/tasks/{slug}/result.md"
         if os.path.exists(candidate):
             result_path = candidate
@@ -139,7 +140,11 @@ def get_task(slug: str):
             "created_at": t.created_at,
             "updated_at": t.updated_at,
             "gates": [
-                {"phase": g["phase"], "result": g["result"], "recorded_at": g["recorded_at"]}
+                {
+                    "phase": g["phase"],
+                    "result": g["result"],
+                    "recorded_at": g["recorded_at"],
+                }
                 for g in gates
             ],
             "result_path": result_path,

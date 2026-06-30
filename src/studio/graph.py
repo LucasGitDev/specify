@@ -77,11 +77,13 @@ def build_graph(
     task_slugs = {t.slug for t in tasks}
     for m in memories:
         if m.scope and m.scope != "global" and m.scope in task_slugs:
-            edges.append({
-                "source": f"t:{m.scope}",
-                "target": str(m.id),
-                "kind": "scope",
-            })
+            edges.append(
+                {
+                    "source": f"t:{m.scope}",
+                    "target": str(m.id),
+                    "kind": "scope",
+                }
+            )
 
     # semantic edges
     seen: set[tuple[str, str]] = set()
@@ -102,12 +104,14 @@ def build_graph(
             if key in seen:
                 continue
             seen.add(key)
-            edges.append({
-                "source": str(mid_a),
-                "target": str(mid_b),
-                "weight": sim,
-                "kind": "semantic",
-            })
+            edges.append(
+                {
+                    "source": str(mid_a),
+                    "target": str(mid_b),
+                    "weight": sim,
+                    "kind": "semantic",
+                }
+            )
 
     return {
         "nodes": memory_nodes + task_nodes,
