@@ -162,3 +162,102 @@ def test_graphnode_is_dataclass():
 def test_graphedge_is_dataclass():
     e = GraphEdge(source="1", target="2", weight=0.9)
     assert e.weight == 0.9
+
+
+# ── TaskNode ─────────────────────────────────────────────────────────────────
+
+def test_tasknode_is_dataclass():
+    from src.studio.graph import TaskNode
+    t = TaskNode(id="t:feat-auth", label="feat-auth", type="task", status="in_progress")
+    assert t.id == "t:feat-auth"
+    assert t.type == "task"
+
+
+# ── build_graph with tasks ────────────────────────────────────────────────────
+
+def test_build_graph_includes_task_nodes(conn):
+    from src.db.tasks import create as create_task
+    create_task(conn, slug="feat-auth", title="Auth feature")
+
+    graph = build_graph(conn, embeddings={})
+
+    task_nodes = [n for n in graph["nodes"] if n["type"] == "task"]
+    assert len(task_nodes) == 1
+    assert task_nodes[0]["id"] == "t:feat-auth"
+    assert task_nodes[0]["label"] == "Auth feature"
+
+
+def test_build_graph_task_without_memories_is_isolated(conn):
+    from src.db.tasks import create as create_task
+    create_task(conn, slug="orphan-task", title="Orphan")
+
+    graph = build_graph(conn, embeddings={})
+
+    task_nodes = [n for n in graph["nodes"] if n["type"] == "task"]
+    assert len(task_nodes) == 1
+    scope_edges = [e for e in graph["edges"] if e.get("kind") == "scope"]
+    assert scope_edges == []
+
+
+def test_build_graph_scope_link_memory_to_task(conn):
+    from src.db.tasks import create as create_task
+    create_task(conn, slug="feat-x", title="Feature X")
+    insert(conn, type="decision", content="use redis", scope="feat-x")
+
+    graph = build_graph(conn, embeddings={})
+
+    scope_edges = [e for e in graph["edges"] if e.get("kind") == "scope"]
+    assert len(scope_edges) == 1
+    assert scope_edges[0]["source"] == "t:feat-x"
+    assert scope_edges[0]["target"] != "t:feat-x"
+
+
+def test_build_graph_global_memory_has_no_scope_link(conn):
+    from src.db.tasks import create as create_task
+    create_task(conn, slug="feat-y", title="Feature Y")
+    insert(conn, type="decision", content="global decision", scope="global")
+
+    graph = build_graph(conn, embeddings={})
+
+    scope_edges = [e for e in graph["edges"] if e.get("kind") == "scope"]
+    assert scope_edges == []
+
+
+def test_build_graph_multiple_memories_same_task(conn):
+    from src.db.tasks import create as create_task
+    create_task(conn, slug="feat-z", title="Feature Z")
+    insert(conn, type="decision", content="decision A", scope="feat-z")
+    insert(conn, type="pattern", content="pattern B", scope="feat-z")
+
+    graph = build_graph(conn, embeddings={})
+
+    scope_edges = [e for e in graph["edges"] if e.get("kind") == "scope"]
+    assert len(scope_edges) == 2
+    for e in scope_edges:
+        assert e["source"] == "t:feat-z"
+
+
+def test_build_graph_semantic_edges_have_kind_semantic(conn):
+    mid1 = insert(conn, type="decision", content="A")
+    mid2 = insert(conn, type="pattern", content="B")
+    embeddings = {mid1: [1.0, 0.0], mid2: [1.0, 0.0]}
+
+    graph = build_graph(conn, embeddings=embeddings, threshold=0.5)
+
+    semantic_edges = [e for e in graph["edges"] if e.get("kind") == "semantic"]
+    assert len(semantic_edges) == 1
+    assert semantic_edges[0]["weight"] == pytest.approx(1.0)
+
+
+def test_build_graph_task_node_fields(conn):
+    from src.db.tasks import create as create_task
+    create_task(conn, slug="my-task", title="My Task", spec_path="spec.md")
+
+    graph = build_graph(conn, embeddings={})
+
+    task_nodes = [n for n in graph["nodes"] if n["type"] == "task"]
+    assert len(task_nodes) == 1
+    node = task_nodes[0]
+    assert node["id"] == "t:my-task"
+    assert node["label"] == "My Task"
+    assert node["status"] == "planned"
