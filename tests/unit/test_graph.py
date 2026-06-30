@@ -25,6 +25,7 @@ def conn(tmp_path):
 
 # ── cosine_similarity ────────────────────────────────────────────────────────
 
+
 def test_cosine_identical_vectors():
     v = [1.0, 0.0, 0.0]
     assert cosine_similarity(v, v) == pytest.approx(1.0)
@@ -55,6 +56,7 @@ def test_cosine_zero_vector_returns_zero():
 
 # ── build_graph ──────────────────────────────────────────────────────────────
 
+
 def _make_embedding(dim: int = 4, val: float = 1.0) -> list[float]:
     v = [0.0] * dim
     v[0] = val
@@ -80,7 +82,9 @@ def test_build_graph_nodes_include_all_memories(conn):
 
 
 def test_build_graph_node_fields(conn):
-    mid = insert(conn, type="decision", content="usar JWT", scope="global", source="spec.md")
+    mid = insert(
+        conn, type="decision", content="usar JWT", scope="global", source="spec.md"
+    )
     graph = build_graph(conn, embeddings={})
     node = graph["nodes"][0]
 
@@ -133,7 +137,11 @@ def test_build_graph_top_k_limits_edges_per_node(conn):
     graph = build_graph(conn, embeddings=embeddings, threshold=0.5, top_k=2)
 
     # anchor should have at most top_k=2 edges
-    anchor_edges = [e for e in graph["edges"] if e["source"] == str(anchor) or e["target"] == str(anchor)]
+    anchor_edges = [
+        e
+        for e in graph["edges"]
+        if e["source"] == str(anchor) or e["target"] == str(anchor)
+    ]
     assert len(anchor_edges) <= 2
 
 
@@ -166,8 +174,10 @@ def test_graphedge_is_dataclass():
 
 # ── TaskNode ─────────────────────────────────────────────────────────────────
 
+
 def test_tasknode_is_dataclass():
     from src.studio.graph import TaskNode
+
     t = TaskNode(id="t:feat-auth", label="feat-auth", type="task", status="in_progress")
     assert t.id == "t:feat-auth"
     assert t.type == "task"
@@ -175,8 +185,10 @@ def test_tasknode_is_dataclass():
 
 # ── build_graph with tasks ────────────────────────────────────────────────────
 
+
 def test_build_graph_includes_task_nodes(conn):
     from src.db.tasks import create as create_task
+
     create_task(conn, slug="feat-auth", title="Auth feature")
 
     graph = build_graph(conn, embeddings={})
@@ -189,6 +201,7 @@ def test_build_graph_includes_task_nodes(conn):
 
 def test_build_graph_task_without_memories_is_isolated(conn):
     from src.db.tasks import create as create_task
+
     create_task(conn, slug="orphan-task", title="Orphan")
 
     graph = build_graph(conn, embeddings={})
@@ -201,6 +214,7 @@ def test_build_graph_task_without_memories_is_isolated(conn):
 
 def test_build_graph_scope_link_memory_to_task(conn):
     from src.db.tasks import create as create_task
+
     create_task(conn, slug="feat-x", title="Feature X")
     insert(conn, type="decision", content="use redis", scope="feat-x")
 
@@ -214,6 +228,7 @@ def test_build_graph_scope_link_memory_to_task(conn):
 
 def test_build_graph_global_memory_has_no_scope_link(conn):
     from src.db.tasks import create as create_task
+
     create_task(conn, slug="feat-y", title="Feature Y")
     insert(conn, type="decision", content="global decision", scope="global")
 
@@ -225,6 +240,7 @@ def test_build_graph_global_memory_has_no_scope_link(conn):
 
 def test_build_graph_multiple_memories_same_task(conn):
     from src.db.tasks import create as create_task
+
     create_task(conn, slug="feat-z", title="Feature Z")
     insert(conn, type="decision", content="decision A", scope="feat-z")
     insert(conn, type="pattern", content="pattern B", scope="feat-z")
@@ -251,6 +267,7 @@ def test_build_graph_semantic_edges_have_kind_semantic(conn):
 
 def test_build_graph_task_node_fields(conn):
     from src.db.tasks import create as create_task
+
     create_task(conn, slug="my-task", title="My Task", spec_path="spec.md")
 
     graph = build_graph(conn, embeddings={})

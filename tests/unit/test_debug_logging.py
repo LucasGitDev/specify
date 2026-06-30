@@ -285,6 +285,7 @@ def test_gate_run_logs_details(monkeypatch, tmp_path):
     )
 
     import src.cli.cmd_gate as cmd_gate_mod
+
     monkeypatch.setattr(cmd_gate_mod, "run_tests", lambda lang, cwd, **kw: fake_result)
 
     runner = CliRunner()

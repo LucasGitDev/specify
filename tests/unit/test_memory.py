@@ -1,7 +1,15 @@
 import pytest
 
 from src.db.connection import get_connection
-from src.db.memory import Memory, delete, get, insert, list_all, search_substring, update
+from src.db.memory import (
+    Memory,
+    delete,
+    get,
+    insert,
+    list_all,
+    search_substring,
+    update,
+)
 from src.db.schema import migrate
 
 
@@ -20,7 +28,9 @@ def test_insert_returns_int(conn):
 
 
 def test_get_returns_memory(conn):
-    mid = insert(conn, type="decision", content="usar JWT", scope="global", source="spec.md")
+    mid = insert(
+        conn, type="decision", content="usar JWT", scope="global", source="spec.md"
+    )
     m = get(conn, mid)
     assert isinstance(m, Memory)
     assert m.id == mid

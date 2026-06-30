@@ -38,7 +38,9 @@ def _ensure_gitignore(root: Path) -> None:
 
 
 @click.command("init")
-@click.option("--force", is_flag=True, help="Reinicializar mesmo se .specify/ já existe")
+@click.option(
+    "--force", is_flag=True, help="Reinicializar mesmo se .specify/ já existe"
+)
 def cmd_init(force: bool) -> None:
     """Inicializa .specify/ no projeto atual."""
     root = find_project_root()
@@ -48,7 +50,9 @@ def cmd_init(force: bool) -> None:
     paths = get_project_paths(root)
 
     if paths.specify_dir.exists() and not force:
-        raise click.ClickException(".specify/ já existe. Use --force para reinicializar.")
+        raise click.ClickException(
+            ".specify/ já existe. Use --force para reinicializar."
+        )
 
     paths.specify_dir.mkdir(exist_ok=True)
     paths.tasks_dir.mkdir(exist_ok=True)

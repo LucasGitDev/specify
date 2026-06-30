@@ -9,6 +9,7 @@ FIXTURES = Path(__file__).parent.parent / "fixtures"
 
 # --- gate_validator ---
 
+
 def test_run_gate_success(tmp_path):
     result = run_gate("echo ok", tmp_path)
     assert result.passed is True
@@ -49,6 +50,7 @@ def test_run_gate_gate_type_preserved(tmp_path):
 
 # --- spec_reader.validate ---
 
+
 def test_validate_valid_spec():
     content = "# Minha Feature\n\n## Critérios de Sucesso\n\n- item 1\n- item 2\n"
     v = validate(content)
@@ -84,6 +86,7 @@ def test_validate_english_success_heading():
 
 
 # --- spec_reader.extract_criteria ---
+
 
 def test_extract_criteria_basic():
     content = "# Título\n\n## Critérios de Sucesso\n\n- Item A\n- Item B\n"

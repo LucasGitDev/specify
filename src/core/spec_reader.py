@@ -46,7 +46,9 @@ def validate(content: str) -> SpecValidation:
         )
 
     # stack recomendada (aviso)
-    if not re.search(r"(stack|linguagem|language|go|python|typescript)", content, re.IGNORECASE):
+    if not re.search(
+        r"(stack|linguagem|language|go|python|typescript)", content, re.IGNORECASE
+    ):
         warnings.append("spec não menciona linguagem ou stack")
 
     return SpecValidation(

@@ -18,7 +18,9 @@ class GateResult:
     command: str
 
 
-def run_gate(cmd: str, cwd: Path, gate_type: str = "custom", timeout: int = 120) -> GateResult:
+def run_gate(
+    cmd: str, cwd: Path, gate_type: str = "custom", timeout: int = 120
+) -> GateResult:
     """Executa um comando e retorna GateResult. Nunca levanta exceção."""
     start = time.monotonic()
     try:

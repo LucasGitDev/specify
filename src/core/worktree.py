@@ -20,9 +20,7 @@ def _run_git(project_root: Path, *args: str) -> str:
         text=True,
     )
     if result.returncode != 0:
-        raise RuntimeError(
-            f"git {' '.join(args)} falhou: {result.stderr.strip()}"
-        )
+        raise RuntimeError(f"git {' '.join(args)} falhou: {result.stderr.strip()}")
     return result.stdout.strip()
 
 
@@ -46,11 +44,11 @@ def list_worktrees(project_root: Path) -> list[WorktreeInfo]:
         if line.startswith("worktree "):
             if current:
                 worktrees.append(_parse_worktree(current))
-            current = {"path": line[len("worktree "):]}
+            current = {"path": line[len("worktree ") :]}
         elif line.startswith("HEAD "):
-            current["commit"] = line[len("HEAD "):]
+            current["commit"] = line[len("HEAD ") :]
         elif line.startswith("branch "):
-            current["branch"] = line[len("branch refs/heads/"):]
+            current["branch"] = line[len("branch refs/heads/") :]
         elif line == "bare":
             current["branch"] = "(bare)"
     if current:

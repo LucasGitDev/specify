@@ -22,6 +22,7 @@ class FastEmbedProvider(EmbeddingProvider):
     def available(self) -> bool:
         try:
             import fastembed  # noqa: F401
+
             return True
         except ImportError:
             return False
@@ -31,6 +32,7 @@ class FastEmbedProvider(EmbeddingProvider):
             return None
         if FastEmbedProvider._model is None:
             from fastembed import TextEmbedding
+
             _CACHE_DIR.mkdir(parents=True, exist_ok=True)
             FastEmbedProvider._model = TextEmbedding(
                 model_name=_MODEL_NAME,

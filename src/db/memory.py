@@ -43,9 +43,7 @@ def insert(
 
 
 def get(conn: sqlite3.Connection, memory_id: int) -> Memory | None:
-    row = conn.execute(
-        "SELECT * FROM memories WHERE id = ?", (memory_id,)
-    ).fetchone()
+    row = conn.execute("SELECT * FROM memories WHERE id = ?", (memory_id,)).fetchone()
     return _row_to_memory(row) if row else None
 
 

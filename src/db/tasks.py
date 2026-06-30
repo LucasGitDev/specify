@@ -53,15 +53,11 @@ def create(
 
 
 def get(conn: sqlite3.Connection, slug: str) -> Task | None:
-    row = conn.execute(
-        "SELECT * FROM tasks WHERE slug = ?", (slug,)
-    ).fetchone()
+    row = conn.execute("SELECT * FROM tasks WHERE slug = ?", (slug,)).fetchone()
     return _row_to_task(row) if row else None
 
 
-def list_all(
-    conn: sqlite3.Connection, status: str | None = None
-) -> list[Task]:
+def list_all(conn: sqlite3.Connection, status: str | None = None) -> list[Task]:
     query = "SELECT * FROM tasks WHERE 1=1"
     params: list = []
     if status is not None:

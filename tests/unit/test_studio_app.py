@@ -26,10 +26,12 @@ def client(db_conn, monkeypatch):
     monkeypatch.setattr(studio_app.app, "router", studio_app.app.router)
 
     from src.studio.app import app
+
     return TestClient(app, raise_server_exceptions=True)
 
 
 # ── GET /api/tasks/{slug} ─────────────────────────────────────────────────────
+
 
 def test_get_task_not_found(client):
     res = client.get("/api/tasks/missing")
@@ -68,6 +70,7 @@ def test_get_task_gates_use_correct_columns(db_conn, client):
 
 
 # ── GET /api/graph includes tasks ─────────────────────────────────────────────
+
 
 def test_graph_includes_task_nodes(db_conn, client):
     tasks_db.create(db_conn, slug="my-task", title="My Task")

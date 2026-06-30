@@ -24,7 +24,9 @@ def find_project_root(start: Path | None = None) -> Path | None:
 def get_project_paths(start: Path | None = None) -> ProjectPaths:
     root = find_project_root(start)
     if root is None:
-        raise RuntimeError("Raiz do projeto não encontrada. Execute dentro de um repositório.")
+        raise RuntimeError(
+            "Raiz do projeto não encontrada. Execute dentro de um repositório."
+        )
     specify_dir = root / ".specify"
     return ProjectPaths(
         root=root,

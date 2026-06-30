@@ -1,4 +1,5 @@
 """Smoke tests end-to-end: testa o fluxo CLI completo num projeto Go temporário."""
+
 from __future__ import annotations
 
 import shutil
@@ -7,15 +8,19 @@ from pathlib import Path
 
 import pytest
 
+
 def _find_specify() -> str:
     # prefer venv-local binary (dev), fall back to PATH (CI --system install)
-    venv_bin = Path(__file__).resolve().parent.parent.parent / ".venv" / "bin" / "specify"
+    venv_bin = (
+        Path(__file__).resolve().parent.parent.parent / ".venv" / "bin" / "specify"
+    )
     if venv_bin.exists():
         return str(venv_bin)
     system_bin = shutil.which("specify")
     if system_bin:
         return system_bin
     raise RuntimeError("specify binary not found in .venv or PATH")
+
 
 SPECIFY = _find_specify()
 
@@ -27,15 +32,18 @@ def go_project(tmp_path):
     subprocess.run(["git", "init", str(tmp_path)], check=True, capture_output=True)
     subprocess.run(
         ["git", "-C", str(tmp_path), "config", "user.email", "test@test.com"],
-        check=True, capture_output=True,
+        check=True,
+        capture_output=True,
     )
     subprocess.run(
         ["git", "-C", str(tmp_path), "config", "user.name", "Test"],
-        check=True, capture_output=True,
+        check=True,
+        capture_output=True,
     )
     subprocess.run(
         ["git", "-C", str(tmp_path), "commit", "--allow-empty", "-m", "init"],
-        check=True, capture_output=True,
+        check=True,
+        capture_output=True,
     )
     return tmp_path
 
@@ -85,7 +93,10 @@ def test_memory_set_and_list(go_project):
 
 def test_memory_search_substring_fallback(go_project):
     _run(["init"], go_project)
-    _run(["memory", "set", "--type", "pattern", "--content", "handlers em api/"], go_project)
+    _run(
+        ["memory", "set", "--type", "pattern", "--content", "handlers em api/"],
+        go_project,
+    )
     result = _run(["memory", "search", "handlers"], go_project)
     assert result.returncode == 0
     assert "handlers" in result.stdout
@@ -107,8 +118,13 @@ def test_task_create_and_list(go_project):
 
 def test_task_update_status(go_project):
     _run(["init"], go_project)
-    _run(["task", "create", "--slug", "add-health", "--title", "Add healthcheck"], go_project)
-    result = _run(["task", "update", "add-health", "--status", "in_progress"], go_project)
+    _run(
+        ["task", "create", "--slug", "add-health", "--title", "Add healthcheck"],
+        go_project,
+    )
+    result = _run(
+        ["task", "update", "add-health", "--status", "in_progress"], go_project
+    )
     assert result.returncode == 0
 
     result = _run(["task", "status", "add-health"], go_project)
@@ -117,13 +133,23 @@ def test_task_update_status(go_project):
 
 def test_gate_record_and_history(go_project):
     _run(["init"], go_project)
-    _run(["task", "create", "--slug", "add-health", "--title", "Add healthcheck"], go_project)
+    _run(
+        ["task", "create", "--slug", "add-health", "--title", "Add healthcheck"],
+        go_project,
+    )
     result = _run(
-        ["gate", "record",
-         "--task", "add-health",
-         "--phase", "green",
-         "--type", "tests",
-         "--status", "pass"],
+        [
+            "gate",
+            "record",
+            "--task",
+            "add-health",
+            "--phase",
+            "green",
+            "--type",
+            "tests",
+            "--status",
+            "pass",
+        ],
         go_project,
     )
     assert result.returncode == 0, result.stderr
@@ -136,7 +162,10 @@ def test_gate_record_and_history(go_project):
 
 def test_task_close(go_project):
     _run(["init"], go_project)
-    _run(["task", "create", "--slug", "add-health", "--title", "Add healthcheck"], go_project)
+    _run(
+        ["task", "create", "--slug", "add-health", "--title", "Add healthcheck"],
+        go_project,
+    )
     result = _run(["task", "close", "add-health"], go_project)
     assert result.returncode == 0
 
@@ -146,7 +175,10 @@ def test_task_close(go_project):
 
 def test_task_worktree_info_without_worktree(go_project):
     _run(["init"], go_project)
-    _run(["task", "create", "--slug", "add-health", "--title", "Add healthcheck"], go_project)
+    _run(
+        ["task", "create", "--slug", "add-health", "--title", "Add healthcheck"],
+        go_project,
+    )
     result = _run(["task", "worktree-info", "add-health"], go_project)
     assert result.returncode == 0
     assert "não tem worktree" in result.stdout
@@ -160,15 +192,21 @@ def test_init_idempotent_with_force(go_project):
 
 def test_memory_delete(go_project):
     _run(["init"], go_project)
-    _run(["memory", "set", "--type", "decision", "--content", "remover isso"], go_project)
+    _run(
+        ["memory", "set", "--type", "decision", "--content", "remover isso"], go_project
+    )
     result = _run(["memory", "list"], go_project)
     # formato: "[1] (decision/global)\n    remover isso"
     # o id fica na linha "[N] ..." e o conteúdo na linha seguinte indentada
     mid = None
     lines = result.stdout.splitlines()
     for i, line in enumerate(lines):
-        if line.startswith("[") and i + 1 < len(lines) and "remover isso" in lines[i + 1]:
-            mid = line[1:line.index("]")]
+        if (
+            line.startswith("[")
+            and i + 1 < len(lines)
+            and "remover isso" in lines[i + 1]
+        ):
+            mid = line[1 : line.index("]")]
             break
     assert mid is not None, f"id não encontrado em: {result.stdout!r}"
     result = _run(["memory", "delete", mid], go_project)

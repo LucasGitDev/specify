@@ -114,7 +114,9 @@ def cmd_list(scope: str | None, mem_type: str | None, as_json: bool) -> None:
 @cmd_memory.command("search")
 @click.argument("query")
 @click.option("--limit", default=5, show_default=True)
-@click.option("--source", default=None, help="Origem da busca (ex: specify.plan, specify.new)")
+@click.option(
+    "--source", default=None, help="Origem da busca (ex: specify.plan, specify.new)"
+)
 @click.option("--json", "as_json", is_flag=True)
 def cmd_search(query: str, limit: int, source: str | None, as_json: bool) -> None:
     """Busca memórias por similaridade semântica (ou substring como fallback)."""
@@ -185,7 +187,9 @@ def cmd_stats(as_json: bool) -> None:
         click.echo("\núltimas buscas:")
         for row in data["recent"]:
             src = f" [{row['source']}]" if row["source"] else ""
-            click.echo(f"  {row['searched_at']}{src} → {row['results_count']} resultado(s): {row['query']}")
+            click.echo(
+                f"  {row['searched_at']}{src} → {row['results_count']} resultado(s): {row['query']}"
+            )
 
 
 @cmd_memory.command("delete")

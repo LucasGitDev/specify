@@ -26,7 +26,12 @@ def test_create_duplicate_slug_raises(conn):
 
 
 def test_get_returns_task(conn):
-    create(conn, slug="feat-x", title="Feature X", spec_path=".specify/tasks/feat-x/spec.md")
+    create(
+        conn,
+        slug="feat-x",
+        title="Feature X",
+        spec_path=".specify/tasks/feat-x/spec.md",
+    )
     t = get(conn, "feat-x")
     assert isinstance(t, Task)
     assert t.slug == "feat-x"

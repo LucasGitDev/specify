@@ -4,7 +4,6 @@ import logging
 import sys
 
 
-
 def _reload_logger(monkeypatch, env: dict):
     """Import src.core.logger with a clean environment."""
     monkeypatch.setattr("os.environ", {**env})
